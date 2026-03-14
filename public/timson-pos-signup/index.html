@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimsonBookshop POS - Sign Up</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <div class="container-fluid p-0">
+        <div class="row g-0 min-vh-100">
+
+            <!-- Left Column: Branding -->
+            <div class="col-lg-5 col-xl-6 branding-section text-white d-none d-lg-flex">
+                <div class="brand-content">
+                    <div class="brand-logo-icon shadow-sm mb-4">
+                        <i class="bi bi-shop fs-1"></i>
+                    </div>
+                    <h1 class="display-5 fw-bold mb-2 tracking-tight">TimsonBookshop POS</h1>
+                    <h2 class="h4 text-white-50 fw-normal mb-4">Smart Retail & Inventory Management System</h2>
+                    <p class="fs-6 text-white-50 fw-light" style="max-width: 480px; margin: 0 auto;">
+                        Manage inventory, sales, credit customers, and analytics in one powerful platform.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right Column: Sign Up Form -->
+            <div class="col-12 col-lg-7 col-xl-6 signup-wrapper">
+                <div class="signup-card">
+
+                    <!-- Mobile Only Header -->
+                    <div class="d-lg-none text-center mb-4 mt-3">
+                        <div class="brand-logo-icon bg-primary text-white mx-auto shadow-sm mb-3"
+                            style="width: 50px; height: 50px;">
+                            <i class="bi bi-shop fs-4"></i>
+                        </div>
+                        <h1 class="h4 fw-bold text-dark mb-1">TimsonBookshop POS</h1>
+                        <p class="text-secondary small">Smart Retail & Inventory</p>
+                    </div>
+
+                    <div class="signup-card-header text-center text-lg-start mb-4">
+                        <h2 class="fw-bold fs-3">Create Account</h2>
+                        <p class="text-secondary">Set up your workspace to get started.</p>
+                    </div>
+
+                    <!-- Alert Placeholder for Success/Error -->
+                    <div id="alertContainer"></div>
+
+                    <form id="signupForm" class="needs-validation" novalidate>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="fullName" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="fullName" placeholder="John Doe" required>
+                                <div class="invalid-feedback">Please enter your full name.</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" placeholder="john@example.com"
+                                    required>
+                                <div class="invalid-feedback">Please enter a valid email.</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" placeholder="+1 (555) 000-0000"
+                                    required>
+                                <div class="invalid-feedback">Please enter a valid phone number.</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="businessName" class="form-label">Business Name</label>
+                                <input type="text" class="form-control" id="businessName" placeholder="My Bookshop"
+                                    required>
+                                <div class="invalid-feedback">Please enter your business name.</div>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="userRole" class="form-label">User Role</label>
+                                <select class="form-select" id="userRole" required>
+                                    <option value="" selected disabled>Choose a role...</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="cashier">Cashier</option>
+                                    <option value="seller">Seller</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a role.</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="password" class="form-label">Create Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="password" placeholder="••••••••"
+                                        required minlength="8">
+                                    <button class="btn btn-outline-secondary password-toggle" type="button"
+                                        data-target="password">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <div class="invalid-feedback">Password must be at least 8 characters.</div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="confirmPassword" class="form-label">Confirm Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="confirmPassword"
+                                        placeholder="••••••••" required>
+                                    <button class="btn btn-outline-secondary password-toggle" type="button"
+                                        data-target="confirmPassword">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <div class="invalid-feedback" id="confirmPasswordFeedback">Passwords do not match.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 mb-3">
+                            <button type="submit" id="createBtn"
+                                class="btn btn-primary w-100 py-2 d-flex justify-content-center align-items-center gap-2">
+                                <span id="btnText">Create Account</span>
+                                <div id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </button>
+                            <button type="button" id="googleBtn" onclick="signG()"
+                                class="btn btn-light w-100 my-2 py-2 d-flex justify-content-center align-items-center gap-2">
+                                <span id="btnTextGoogle"><svg xmlns="http://www.w3.org/2000/svg" width="32px" height="32px" viewBox="0 0 48 48" class="mx-3"><path fill="#ffc107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917"/><path fill="#ff3d00" d="m6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691"/><path fill="#4caf50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.9 11.9 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44"/><path fill="#1976d2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917"/></svg>Continue with Google</span>
+                                <div id="btnSpinnerGoogle" class="spinner-border spinner-border-sm d-none" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </button>
+                        </div>
+
+                        <div class="text-center">
+                            <span class="text-secondary small">Already have an account? </span>
+                            <a href="../timson-pos-login/index.html" class="login-link small fw-medium">Login</a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+       
+    </div>
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Page Script -->
+    <script src="script.js"></script>
+    <!-- Custom Script -->
+    <script type="module" >
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import {getAuth, GoogleAuthProvider, signInWithPopup} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyACgmBzV74SwJLVyUCMdN1xOxZjMI4UgCg",
+    authDomain: "posapp-ed05a.firebaseapp.com",
+    projectId: "posapp-ed05a",
+    storageBucket: "posapp-ed05a.firebasestorage.app",
+    messagingSenderId: "486175914054",
+    appId: "1:486175914054:web:b2f7d71ae98c451f417247"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+   const signG = () => {
+    // console.log('working');
+    signInWithPopup(auth, provider)
+    .then((result) => {
+     const user = result.user;
+     console.log(user);
+     setTimeout(() => {
+      // path should be relative from signup folder
+      window.location.href = '../timson-pos-admin/analytics.html';
+     }, 1000)
+      
+    })
+    .catch((error) => {
+      console.error(error);
+      
+    })
+    
+  }
+  window.signG = signG
+
+
+
+</script>
+</body>
+
+</html>

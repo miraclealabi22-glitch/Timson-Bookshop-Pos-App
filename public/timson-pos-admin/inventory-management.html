@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimsonBookshop POS - Inventory Management</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="admin.css">
+    <style>
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .status-in-stock {
+            background-color: #10b981;
+        }
+
+        /* Green */
+        .status-low-stock {
+            background-color: #f59e0b;
+        }
+
+        /* Orange */
+        .status-out-stock {
+            background-color: #ef4444;
+        }
+
+        /* Red */
+
+        .action-btns .btn {
+            padding: 0.35rem;
+            font-size: 0.875rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            margin-left: 0.25rem;
+        }
+
+        /* Modal tweaks */
+        .modal-content {
+            border-radius: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <nav id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-book-open text-primary"></i> <span class="fs-5">TimsonBookshop</span></h3>
+        </div>
+        <ul class="list-unstyled components">
+            <li><a href="admin-dashboard.html"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+            <li class="active"><a href="inventory-management.html"><i class="fas fa-boxes"></i> Inventory</a></li>
+            <li><a href="stock-control.html"><i class="fas fa-clipboard-check"></i> Stock Control</a></li>
+            <li><a href="sales-reports.html"><i class="fas fa-file-invoice-dollar"></i> Sales Reports</a></li>
+            <li><a href="customer-credit.html"><i class="fas fa-credit-card"></i> Customer Credit</a></li>
+            <li><a href="employee-management.html"><i class="fas fa-users"></i> Employees</a></li>
+            <li><a href="analytics.html"><i class="fas fa-chart-pie"></i> Analytics</a></li>
+            <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+        </ul>
+    </nav>
+
+    <!-- Page Content -->
+    <div id="content" class="content">
+        <!-- Top Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light top-navbar">
+            <div class="container-fluid">
+                <button type="button" id="sidebarCollapse" class="btn btn-light d-lg-none shadow-sm">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="d-flex ms-auto align-items-center">
+                    <div class="dropdown me-3 dropdown-notification">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-bell"></i>
+                            <span class="badge bg-danger">3</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                            <li>
+                                <h6 class="dropdown-header">Notifications</h6>
+                            </li>
+                            <li><a class="dropdown-item py-2" href="#">Low stock: Harry Potter</a></li>
+                            <li><a class="dropdown-item py-2" href="#">New credit customer added</a></li>
+                            <li><a class="dropdown-item py-2" href="#">Sales goal reached!</a></li>
+                        </ul>
+                    </div>
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center user-profile" href="#"
+                            role="button" data-bs-toggle="dropdown">
+                            <img src="https://ui-avatars.com/api/?name=Admin+User&background=4361ee&color=fff"
+                                alt="User Profile" class="rounded-circle me-2" width="36" height="36">
+                            <span>Admin</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                            <li><a class="dropdown-item py-2" href="#"><i
+                                        class="fas fa-user-circle me-2 text-muted"></i> Profile</a></li>
+                            <li><a class="dropdown-item py-2" href="#"><i class="fas fa-cog me-2 text-muted"></i>
+                                    Settings</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a id="logoutBtn" class="dropdown-item py-2 text-danger" href="#"><i
+                                        class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="container-fluid py-4 px-4">
+            <!-- Header & Actions -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+                <h3 class="fw-bold text-dark mb-0">Inventory Management</h3>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-white border bg-white shadow-sm fw-medium text-dark"><i
+                            class="fas fa-print me-2 text-muted"></i> Print Barcode Labels</button>
+                    <button class="btn btn-white border bg-white shadow-sm fw-medium text-dark"><i
+                            class="fas fa-file-import me-2 text-muted"></i> Import Products</button>
+                    <button class="btn btn-primary shadow-sm fw-medium" data-bs-toggle="modal"
+                        data-bs-target="#addProductModal"><i class="fas fa-plus me-2"></i> Add New Product</button>
+                </div>
+            </div>
+            <!-- Current user panel -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div id="userPanel" class="card border-0 shadow-sm">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div id="panelPic" class="rounded-circle overflow-hidden" style="width:48px;height:48px;"></div>
+                            <div>
+                                <h5 id="panelName" class="mb-0 fw-bold">User</h5>
+                                <small id="panelEmail" class="text-muted"></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+<div id="alertArea"></div>
+            <!-- Main Table Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+
+                    <!-- Filters and Search -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-4">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted"><i
+                                        class="fas fa-search"></i></span>
+                                <input type="text" class="form-control bg-light border-start-0 ps-0" id="searchInput"
+                                    placeholder="Search products...">
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <select class="form-select bg-light" id="categoryFilter">
+                                <option value="">All Categories</option>
+                                <option value="Books">Books</option>
+                                <option value="Stationery">Stationery</option>
+                                <option value="Accessories">Accessories</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <select class="form-select bg-light" id="stockSort">
+                                <option value="">Sort by Stock Level</option>
+                                <option value="low-high">Low to High</option>
+                                <option value="high-low">High to Low</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <button class="btn btn-outline-secondary w-100" id="resetFilters"><i
+                                    class="fas fa-sync-alt me-2"></i> Reset</button>
+                        </div>
+                    </div>
+
+                    <!-- Inventory Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle border-top mb-0" id="inventoryTable">
+                            <thead class="table-light text-muted">
+                                <tr>
+                                    <th class="ps-3">Product ID</th>
+                                    <th>Product Name</th>
+                                    <th>Category</th>
+                                    <th>Cost Price</th>
+                                    <th>Selling Price</th>
+                                    <th>Stock Qty</th>
+                                    <th>Reorder Lvl</th>
+                                    <th>Status</th>
+                                    <th class="text-end pe-3">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                
+                               
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4">
+                        <div class="text-muted fs-sm mb-3 mb-md-0">
+                            Showing 1 to 4 of 245 entries
+                        </div>
+                        <nav aria-label="Inventory Pagination">
+                            <ul class="pagination mb-0">
+                                <li class="page-item disabled">
+                                    <a class="page-link shadow-none" href="#" tabindex="-1"
+                                        aria-disabled="true">Previous</a>
+                                </li>
+                                <li class="page-item active"><a class="page-link shadow-none" href="#">1</a></li>
+                                <li class="page-item"><a class="page-link shadow-none" href="#">2</a></li>
+                                <li class="page-item"><a class="page-link shadow-none" href="#">3</a></li>
+                                <li class="page-item">
+                                    <a class="page-link shadow-none" href="#">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light border-bottom-0 pb-3">
+                    <h5 class="modal-title fw-bold" id="addProductModalLabel">Add New Product</h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 pt-3">
+                    <form id="addProductForm">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label for="productName" class="form-label fw-medium text-dark flex-grow-1">Product
+                                    Name</label>
+                                <input type="text" class="form-control" id="productName" required
+                                    placeholder="e.g. Think and Grow Rich">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="productCategory" class="form-label fw-medium text-dark">Category</label>
+                                <select class="form-select" id="productCategory" required>
+                                    <option value="" disabled selected>Select category...</option>
+                                    <option value="Books">Books</option>
+                                    <option value="Stationery">Stationery</option>
+                                    <option value="Accessories">Accessories</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="costPrice" class="form-label fw-medium text-dark">Cost Price ($)</label>
+                                <input type="number" class="form-control" id="costPrice" step="0.01" required
+                                    placeholder="0.00">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="sellingPrice" class="form-label fw-medium text-dark">Selling Price
+                                    ($)</label>
+                                <input type="number" class="form-control" id="sellingPrice" step="0.01" required
+                                    placeholder="0.00">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="stockQuantity" class="form-label fw-medium text-dark">Initial Stock</label>
+                                <input type="number" class="form-control" id="stockQuantity" required min="0"
+                                    placeholder="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="reorderLevel" class="form-label fw-medium text-dark">Reorder Level</label>
+                                <input type="number" class="form-control" id="reorderLevel" required min="0"
+                                    placeholder="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="barcode" class="form-label fw-medium text-dark">Barcode (UPC/EAN)</label>
+                                <input type="text" class="form-control" id="barcode" placeholder="Scan or enter code">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
+                    <button type="button" class="btn btn-light fw-medium shadow-none"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary px-4 fw-medium shadow-sm" id="saveProductBtn" id="saveProductBtn">Save
+                        Product</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom Sidebar JS (reused from admin) -->
+    <script src="admin.js"></script>
+    <!-- Inventory Specific JS -->
+    <script src="inventory.js" type="module"></script>
+    
+</body>
+
+</html>                                             

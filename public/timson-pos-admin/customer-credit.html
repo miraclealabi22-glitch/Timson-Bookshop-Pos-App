@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimsonBookshop POS - Customer Credit</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="admin.css">
+    <style>
+        .action-btns .btn {
+            padding: 0.35rem;
+            font-size: 0.875rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <nav id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-book-open text-primary"></i> <span class="fs-5">TimsonBookshop</span></h3>
+        </div>
+        <ul class="list-unstyled components">
+            <li><a href="admin-dashboard.html"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+            <li><a href="inventory-management.html"><i class="fas fa-boxes"></i> Inventory</a></li>
+            <li><a href="stock-control.html"><i class="fas fa-clipboard-check"></i> Stock Control</a></li>
+            <li><a href="sales-reports.html"><i class="fas fa-file-invoice-dollar"></i> Sales Reports</a></li>
+            <li class="active"><a href="customer-credit.html"><i class="fas fa-credit-card"></i> Customer Credit</a>
+            </li>
+            <li><a href="employee-management.html"><i class="fas fa-users"></i> Employees</a></li>
+            <li><a href="analytics.html"><i class="fas fa-chart-pie"></i> Analytics</a></li>
+            <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+        </ul>
+    </nav>
+
+    <!-- Page Content -->
+    <div id="content" class="content">
+        <!-- Top Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light top-navbar">
+            <div class="container-fluid">
+                <button type="button" id="sidebarCollapse" class="btn btn-light d-lg-none shadow-sm">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="d-flex ms-auto align-items-center">
+                    <div class="dropdown me-3 dropdown-notification">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-bell"></i>
+                            <span class="badge bg-danger">2</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                            <li>
+                                <h6 class="dropdown-header">Credit Notifications</h6>
+                            </li>
+                            <li><a class="dropdown-item py-2" href="#">Sarah Johnson payment overdue</a></li>
+                            <li><a class="dropdown-item py-2" href="#">Mike Smith nearing credit limit</a></li>
+                        </ul>
+                    </div>
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center user-profile" href="#"
+                            role="button" data-bs-toggle="dropdown">
+                            <img src="https://ui-avatars.com/api/?name=Admin+User&background=4361ee&color=fff"
+                                alt="User Profile" class="rounded-circle me-2" width="36" height="36">
+                            <span>Admin</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                            <li><a class="dropdown-item py-2" href="#"><i
+                                        class="fas fa-user-circle me-2 text-muted"></i> Profile</a></li>
+                            <li><a class="dropdown-item py-2" href="#"><i class="fas fa-cog me-2 text-muted"></i>
+                                    Settings</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a id="logoutBtn" class="dropdown-item py-2 text-danger" href="#"><i
+                                        class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="container-fluid py-4 px-4">
+
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                <h3 class="fw-bold text-dark mb-0">Customer Credit Management</h3>
+                <button class="btn btn-primary shadow-sm fw-medium" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
+                    <i class="fas fa-user-plus me-2"></i> Add Credit Customer
+                </button>
+            </div>
+            <!-- Current user panel -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div id="userPanel" class="card border-0 shadow-sm">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div id="panelPic" class="rounded-circle overflow-hidden" style="width:48px;height:48px;"></div>
+                            <div>
+                                <h5 id="panelName" class="mb-0 fw-bold">User</h5>
+                                <small id="panelEmail" class="text-muted"></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-md-4">
+                    <div class="card stat-card border-0 shadow-sm h-100">
+                        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                            <div>
+                                <h6 class="text-muted fw-normal mb-2">Total Outstanding Debt</h6>
+                                <h3 class="mb-0 fw-bold text-danger">$1,240.50</h3>
+                            </div>
+                            <div class="stat-icon bg-danger-light text-danger">
+                                <i class="fas fa-file-invoice-dollar"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card stat-card border-0 shadow-sm h-100">
+                        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                            <div>
+                                <h6 class="text-muted fw-normal mb-2">Active Credit Customers</h6>
+                                <h3 class="mb-0 fw-bold text-primary">24</h3>
+                            </div>
+                            <div class="stat-icon bg-primary-light text-primary">
+                                <i class="fas fa-users"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card stat-card border-0 shadow-sm h-100">
+                        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                            <div>
+                                <h6 class="text-muted fw-normal mb-2">Payments Due (30 Days)</h6>
+                                <h3 class="mb-0 fw-bold text-warning">8</h3>
+                            </div>
+                            <div class="stat-icon bg-warning-light text-warning">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Database Table -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center p-4 pb-0">
+                    <h5 class="card-title fw-bold mb-0">Customer Database</h5>
+                    <div class="input-group w-auto">
+                        <span class="input-group-text bg-light border-0 text-muted"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control bg-light border-0" placeholder="Search customer...">
+                    </div>
+                </div>
+                <div class="card-body p-0 mt-3">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 border-top">
+                            <thead class="table-light text-muted">
+                                <tr>
+                                    <th class="ps-4">Customer ID</th>
+                                    <th>Customer Name</th>
+                                    <th>Phone Number</th>
+                                    <th>Credit Limit</th>
+                                    <th>Outstanding Balance</th>
+                                    <th>Credit Usage</th>
+                                    <th class="text-end pe-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="ps-4 text-muted fw-medium">#CUST-1001</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary-light rounded-circle text-primary fw-bold d-flex align-items-center justify-content-center me-3"
+                                                style="width: 36px; height: 36px;">JD</div>
+                                            <span class="fw-bold text-dark">John Doe</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-muted">+1 (555) 123-4567</td>
+                                    <td class="text-dark fw-medium">$500.00</td>
+                                    <td><span class="fw-bold text-danger">$320.50</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 6px;">
+                                                <div class="progress-bar bg-warning" role="progressbar"
+                                                    style="width: 64%;"></div>
+                                            </div>
+                                            <small class="text-muted">64%</small>
+                                        </div>
+                                    </td>
+                                    <td class="text-end pe-4 action-btns">
+                                        <a href="customer-details.html" class="btn btn-outline-primary fw-medium px-3">
+                                            <i class="fas fa-folder-open me-1"></i> View Account
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="ps-4 text-muted fw-medium">#CUST-1002</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-success-light rounded-circle text-success fw-bold d-flex align-items-center justify-content-center me-3"
+                                                style="width: 36px; height: 36px;">SJ</div>
+                                            <span class="fw-bold text-dark">Sarah Johnson</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-muted">+1 (555) 987-6543</td>
+                                    <td class="text-dark fw-medium">$1,000.00</td>
+                                    <td><span class="fw-bold text-danger">$890.00</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 6px;">
+                                                <div class="progress-bar bg-danger" role="progressbar"
+                                                    style="width: 89%;"></div>
+                                            </div>
+                                            <small class="text-muted">89%</small>
+                                        </div>
+                                    </td>
+                                    <td class="text-end pe-4 action-btns">
+                                        <a href="customer-details.html" class="btn btn-outline-primary fw-medium px-3">
+                                            <i class="fas fa-folder-open me-1"></i> View Account
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="ps-4 text-muted fw-medium">#CUST-1003</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary-light rounded-circle text-primary fw-bold d-flex align-items-center justify-content-center me-3"
+                                                style="width: 36px; height: 36px;">MS</div>
+                                            <span class="fw-bold text-dark">Mike Smith</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-muted">+1 (555) 456-7890</td>
+                                    <td class="text-dark fw-medium">$300.00</td>
+                                    <td><span class="fw-bold text-success">$0.00</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 6px;">
+                                                <div class="progress-bar bg-success" role="progressbar"
+                                                    style="width: 0%;"></div>
+                                            </div>
+                                            <small class="text-muted">0%</small>
+                                        </div>
+                                    </td>
+                                    <td class="text-end pe-4 action-btns">
+                                        <a href="customer-details.html" class="btn btn-outline-primary fw-medium px-3">
+                                            <i class="fas fa-folder-open me-1"></i> View Account
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Showing 3 of 24 credit customers</small>
+                    <nav aria-label="Customer Pagination">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item disabled"><a class="page-link shadow-none" href="#">Prev</a></li>
+                            <li class="page-item active"><a class="page-link shadow-none" href="#">1</a></li>
+                            <li class="page-item"><a class="page-link shadow-none" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link shadow-none" href="#">Next</a></li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Add Customer Modal -->
+    <div class="modal fade" id="addCustomerModal" tabindex="-1" aria-labelledby="addCustomerModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+                <div class="modal-header bg-light border-bottom-0 pb-3">
+                    <h5 class="modal-title fw-bold" id="addCustomerModalLabel">Add Credit Customer</h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 pt-3">
+                    <form id="addCustomerForm">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="custName" class="form-label fw-medium text-dark">Customer Name</label>
+                                <input type="text" class="form-control" id="custName" required
+                                    placeholder="e.g. Emily Davis">
+                            </div>
+                            <div class="col-12">
+                                <label for="custPhone" class="form-label fw-medium text-dark">Phone Number</label>
+                                <input type="tel" class="form-control" id="custPhone" required
+                                    placeholder="e.g. +1 555 123 4567">
+                            </div>
+                            <div class="col-12">
+                                <label for="custEmail" class="form-label fw-medium text-dark">Email Address
+                                    (Optional)</label>
+                                <input type="email" class="form-control" id="custEmail"
+                                    placeholder="e.g. emily@example.com">
+                            </div>
+                            <div class="col-12">
+                                <label for="custCreditLimit" class="form-label fw-medium text-dark">Credit Limit
+                                    ($)</label>
+                                <input type="number" class="form-control" id="custCreditLimit" required min="1"
+                                    placeholder="500.00">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
+                    <button type="button" class="btn btn-light fw-medium shadow-none"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary px-4 fw-medium shadow-sm" id="saveCustomerBtn">Save
+                        Customer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom Sidebar JS -->
+    <script src="admin.js"></script>
+    <script src="customer-credit.js"></script>
+</body>
+
+</html>

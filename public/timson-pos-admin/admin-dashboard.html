@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimsonBookshop POS - Admin Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <nav id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-book-open text-primary"></i> <span class="fs-5">TimsonBookshop</span></h3>
+        </div>
+        <ul class="list-unstyled components">
+            <li class="active"><a href="admin-dashboard.html"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+            <li><a href="inventory-management.html"><i class="fas fa-boxes"></i> Inventory</a></li>
+            <li><a href="stock-control.html"><i class="fas fa-clipboard-check"></i> Stock Control</a></li>
+            <li><a href="sales-reports.html"><i class="fas fa-file-invoice-dollar"></i> Sales Reports</a></li>
+            <li><a href="customer-credit.html"><i class="fas fa-credit-card"></i> Customer Credit</a></li>
+            <li><a href="employee-management.html"><i class="fas fa-users"></i> Employee Management</a></li>
+            <li><a href="analytics.html"><i class="fas fa-chart-pie"></i> Analytics</a></li>
+            <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+        </ul>
+    </nav>
+
+    <!-- Page Content -->
+    <div id="content" class="content">
+        <!-- Top Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light top-navbar">
+            <div class="container-fluid">
+                <button type="button" id="sidebarCollapse" class="btn btn-light d-lg-none shadow-sm">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="d-flex ms-auto align-items-center">
+                    <div class="dropdown me-3 dropdown-notification">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-bell"></i>
+                            <span class="badge bg-danger">3</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                            <li>
+                                <h6 class="dropdown-header">Notifications</h6>
+                            </li>
+                            <li><a class="dropdown-item py-2" href="#">Low stock: Harry Potter</a></li>
+                            <li><a class="dropdown-item py-2" href="#">New credit customer added</a></li>
+                            <li><a class="dropdown-item py-2" href="#">Sales goal reached!</a></li>
+                        </ul>
+                    </div>
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center user-profile" href="#"
+                            role="button" data-bs-toggle="dropdown">
+                            <!-- <img src="https://ui-avatars.com/api/?name=Admin+User&background=4361ee&color=fff"
+                                alt="User Profile" class="rounded-circle me-2" width="36" height="36"> -->
+                                <div class="rounded-circle me-2" id="profilePics"></div>
+                            <span>Admin</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                            <li><a class="dropdown-item py-2" href="#"><i
+                                        class="fas fa-user-circle me-2 text-muted"></i> Profile</a></li>
+                            <li><a class="dropdown-item py-2" href="#"><i class="fas fa-cog me-2 text-muted"></i>
+                                    Settings</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a id="logoutBtn" class="dropdown-item py-2 text-danger" href="#"><i
+                                        class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Dashboard Content -->
+        <div class="container-fluid py-3 px-4">
+            <h3 class="mb-4 fw-bold text-dark">Dashboard Overview</h3>
+            <!-- Current user panel -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div id="userPanel" class="card border-0 shadow-sm">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div id="panelPic" class="rounded-circle overflow-hidden" style="width:48px;height:48px;"></div>
+                            <div>
+                                <h5 id="panelName" class="mb-0 fw-bold">User</h5>
+                                <small id="panelEmail" class="text-muted"></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Rows -->
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="card stat-card border-0 shadow-sm h-100">
+                        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                            <div>
+                                <h6 class="text-muted fw-normal mb-2">Total Sales Today</h6>
+                                <h3 class="mb-0 fw-bold">$2,450.00</h3>
+                            </div>
+                            <div class="stat-icon bg-primary-light text-primary">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="card stat-card border-0 shadow-sm h-100">
+                        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                            <div>
+                                <h6 class="text-muted fw-normal mb-2">Total Products in Stock</h6>
+                                <h3 class="mb-0 fw-bold">14,320</h3>
+                            </div>
+                            <div class="stat-icon bg-success-light text-success">
+                                <i class="fas fa-box-open"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="card stat-card border-0 shadow-sm h-100">
+                        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                            <div>
+                                <h6 class="text-muted fw-normal mb-2">Low Stock Alerts</h6>
+                                <h3 class="mb-0 fw-bold text-danger">12</h3>
+                            </div>
+                            <div class="stat-icon bg-danger-light text-danger">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="card stat-card border-0 shadow-sm h-100">
+                        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                            <div>
+                                <h6 class="text-muted fw-normal mb-2">Credit Customers Balance</h6>
+                                <h3 class="mb-0 fw-bold text-warning">$1,240.50</h3>
+                            </div>
+                            <div class="stat-icon bg-warning-light text-warning">
+                                <i class="fas fa-users"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <!-- Sales Chart -->
+                <div class="col-12 col-lg-8">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div
+                            class="card-header bg-white border-0 d-flex justify-content-between align-items-center p-4 pb-0">
+                            <h5 class="card-title fw-bold mb-0">Sales Trend</h5>
+                            <select class="form-select form-select-sm w-auto border-0 bg-light shadow-none fw-medium"
+                                id="chartFilter">
+                                <option value="daily">Daily</option>
+                                <option value="weekly" selected>Weekly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                        </div>
+                        <div class="card-body p-4">
+                            <div style="height: 300px;">
+                                <canvas id="salesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory Alerts -->
+                <div class="col-12 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div
+                            class="card-header bg-white border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
+                            <h5 class="card-title fw-bold mb-0">Inventory Alerts</h5>
+                            <span class="badge bg-danger-light text-danger rounded-pill px-3 py-2">Action needed</span>
+                        </div>
+                        <div class="card-body p-0 mt-3">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 border-top">
+                                    <thead class="table-light text-muted">
+                                        <tr>
+                                            <th class="ps-4">Product Name</th>
+                                            <th>Stock</th>
+                                            <th>Reorder</th>
+                                            <th class="pe-4">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="ps-4"><span class="fw-medium text-dark">The Great Gatsby</span>
+                                            </td>
+                                            <td><span class="fw-bold text-danger">5</span></td>
+                                            <td class="text-muted">10</td>
+                                            <td class="pe-4"><span
+                                                    class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1">Critical</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4"><span class="fw-medium text-dark">1984 by George
+                                                    Orwell</span></td>
+                                            <td><span class="fw-bold text-warning">12</span></td>
+                                            <td class="text-muted">15</td>
+                                            <td class="pe-4"><span
+                                                    class="badge bg-warning-subtle text-warning rounded-pill px-2 py-1">Low</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4"><span class="fw-medium text-dark">To Kill a
+                                                    Mockingbird</span></td>
+                                            <td><span class="fw-bold text-warning">18</span></td>
+                                            <td class="text-muted">20</td>
+                                            <td class="pe-4"><span
+                                                    class="badge bg-warning-subtle text-warning rounded-pill px-2 py-1">Low</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4"><span class="fw-medium text-dark">Dune</span></td>
+                                            <td><span class="fw-bold text-danger">4</span></td>
+                                            <td class="text-muted">10</td>
+                                            <td class="pe-4"><span
+                                                    class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1">Critical</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4"><span class="fw-medium text-dark">Atomic Habits</span></td>
+                                            <td><span class="fw-bold text-danger">8</span></td>
+                                            <td class="text-muted">10</td>
+                                            <td class="pe-4"><span
+                                                    class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1">Critical</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-0 text-center py-3">
+                            <a href="#" class="text-primary text-decoration-none fw-medium fs-sm">View All Alerts <i
+                                    class="fas fa-arrow-right ms-1"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Transactions Table -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div
+                            class="card-header bg-white border-0 d-flex justify-content-between align-items-center p-4 pb-0">
+                            <h5 class="card-title fw-bold mb-0">Recent Transactions</h5>
+                            <button class="btn btn-sm btn-outline-primary shadow-sm px-3 rounded-pill"><i
+                                    class="fas fa-download me-1"></i> Export</button>
+                        </div>
+                        <div class="card-body p-0 mt-3">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 border-top">
+                                    <thead class="table-light text-muted">
+                                        <tr>
+                                            <th class="ps-4">Transaction ID</th>
+                                            <th>Product</th>
+                                            <th>Amount</th>
+                                            <th>Cashier</th>
+                                            <th class="pe-4 text-end">Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="ps-4 text-muted fw-medium">#TXN-8745</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-light rounded-circle p-2 me-3 product-icon-wrapper">
+                                                        <i class="fas fa-book text-primary"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0 fw-bold text-dark fs-6">Harry Potter Set</h6>
+                                                        <small class="text-muted style-category">Books</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="fw-bold text-dark">$85.00</td>
+                                            <td class="text-muted">Jane Doe</td>
+                                            <td class="pe-4 text-muted text-end">Oct 24, 2023 <br> <small>10:45
+                                                    AM</small></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4 text-muted fw-medium">#TXN-8746</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-light rounded-circle p-2 me-3 product-icon-wrapper">
+                                                        <i class="fas fa-book text-primary"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0 fw-bold text-dark fs-6">Lord of the Rings</h6>
+                                                        <small class="text-muted style-category">Books</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="fw-bold text-dark">$45.50</td>
+                                            <td class="text-muted">John Smith</td>
+                                            <td class="pe-4 text-muted text-end">Oct 24, 2023 <br> <small>11:12
+                                                    AM</small></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4 text-muted fw-medium">#TXN-8747</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-light rounded-circle p-2 me-3 product-icon-wrapper">
+                                                        <i class="fas fa-pen text-primary"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0 fw-bold text-dark fs-6">Premium Notebook & Pen
+                                                        </h6>
+                                                        <small class="text-muted style-category">Stationery</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="fw-bold text-dark">$22.00</td>
+                                            <td class="text-muted">Jane Doe</td>
+                                            <td class="pe-4 text-muted text-end">Oct 24, 2023 <br> <small>12:30
+                                                    PM</small></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4 text-muted fw-medium">#TXN-8748</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-light rounded-circle p-2 me-3 product-icon-wrapper">
+                                                        <i class="fas fa-book text-primary"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0 fw-bold text-dark fs-6">Think and Grow Rich</h6>
+                                                        <small class="text-muted style-category">Books</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="fw-bold text-dark">$15.99</td>
+                                            <td class="text-muted">Mike Johnson</td>
+                                            <td class="pe-4 text-muted text-end">Oct 24, 2023 <br> <small>01:15
+                                                    PM</small></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom JS -->
+    <script src="admin.js"></script>
+</body>
+
+</html>

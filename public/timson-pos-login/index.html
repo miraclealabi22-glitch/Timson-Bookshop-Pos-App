@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimsonBookshop POS - Login</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --surface-color: #ffffff;
+            --background-color: #f3f4f6;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Branding Section Styling */
+        .branding-section {
+            background: linear-gradient(135deg, #312e81 0%, #4f46e5 100%);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 4rem;
+        }
+
+        /* Ambient animated pattern background */
+        .branding-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                radial-gradient(circle at center, rgba(255,255,255,0.06) 0, rgba(255,255,255,0.06) 2px, transparent 2px);
+            background-size: 40px 40px;
+            animation: movePattern 40s linear infinite;
+            z-index: 1;
+        }
+
+        .branding-section > * {
+            z-index: 2;
+            position: relative;
+        }
+
+        @keyframes movePattern {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-80px); }
+        }
+
+        /* Login Card Styling */
+        .login-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--surface-color);
+            padding: 2rem;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .login-card-header {
+            margin-bottom: 2.5rem;
+        }
+
+        .login-card-header h2 {
+            font-weight: 700;
+            font-size: 1.875rem;
+            letter-spacing: -0.025em;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-card-header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Form Controls */
+        .form-label {
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control {
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            background-color: #f9fafb;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus {
+            background-color: #ffffff;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+            outline: none;
+        }
+
+        .form-control::placeholder {
+            color: #9ca3af;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            letter-spacing: 0.025em;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover, .btn-primary:focus {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* Checkbox & Links */
+        .form-check-input {
+            width: 1.125rem;
+            height: 1.125rem;
+            border-radius: 0.25rem;
+            border-color: var(--border-color);
+            margin-top: 0.1rem;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .form-check-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-left: 0.25rem;
+        }
+
+        a.forgot-link {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        a.forgot-link:hover {
+            color: var(--primary-hover);
+            text-decoration: underline;
+        }
+
+        /* Utilities */
+        .brand-logo-icon {
+            width: 64px;
+            height: 64px;
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Responsive */
+        @media (max-width: 991.98px) {
+            .branding-section {
+                padding: 3rem 2rem;
+                min-height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid p-0">
+    <div class="row g-0 min-vh-100">
+        
+        <!-- Left Column: Branding -->
+        <div class="col-lg-5 col-xl-6 branding-section text-white d-none d-lg-flex">
+            <div class="brand-logo-icon shadow-sm">
+                <!-- Simple SVG Book/Store Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+                </svg>
+            </div>
+            <h1 class="display-5 fw-bold mb-3 tracking-tight">TimsonBookshop POS</h1>
+            <p class="fs-5 text-white-50 fw-light" style="max-width: 480px;">
+                A modern retail workspace. Manage your inventory, process transactions seamlessly, and grow your bookstore business.
+            </p>
+        </div>
+
+        <!-- Right Column: Login Form -->
+        <div class="col-12 col-lg-7 col-xl-6 login-wrapper">
+            <div class="login-card">
+                
+                <!-- Mobile Only Header (Shows when left column is hidden) -->
+                <div class="d-lg-none text-center mb-5">
+                    <div class="brand-logo-icon bg-primary text-white mx-auto shadow-sm" style="background-color: var(--primary-color) !important;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+                        </svg>
+                    </div>
+                    <h1 class="h3 fw-bold text-dark mb-1">TimsonBookshop POS</h1>
+                </div>
+
+                <div class="login-card-header text-center text-lg-start">
+                    <h2>Welcome back</h2>
+                    <p>Enter your credentials to access your account.</p>
+                </div>
+
+                <form id="loginForm" novalidate>
+                    <div class="mb-4">
+                        <label for="email" class="form-label">Email address</label>
+                        <input type="email" class="form-control" id="email" placeholder="admin@timsonbookshop.com" required autocomplete="email">
+                        <div class="invalid-feedback">
+                            Please provide a valid email address.
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label for="password" class="form-label mb-0">Password</label>
+                            <a href="../timson-pos-signup/index.html" class="forgot-link">Forgot password?</a>
+                        </div>
+                        <input type="password" class="form-control" id="password" placeholder="••••••••" required autocomplete="current-password">
+                        <div class="invalid-feedback">
+                            Password is required.
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check d-flex align-items-center">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">
+                                Remember me for 30 days
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 d-flex justify-content-center align-items-center gap-2">
+                        <span id="btnText">Sign in to workspace</span>
+                        <div id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </button>
+                    
+                </form>
+
+                <div class="mt-5 text-center text-lg-start">
+                    <p class="text-secondary small mb-0">&copy; 2026 TimsonBookshop POS. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom Interaction Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('loginForm');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+        const submitBtn = form.querySelector('button[type="submit"]');
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Basic Bootstrap 5 Validation
+            if (!form.checkValidity()) {
+                e.stopPropagation();
+                form.classList.add('was-validated');
+                return;
+            }
+
+            // UI Loading State
+            submitBtn.disabled = true;
+            btnText.textContent = 'Signing in...';
+            btnSpinner.classList.remove('d-none');
+
+            // attempt real Firebase auth
+            import("https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js").then(({getAuth, signInWithEmailAndPassword}) => {
+                const auth = getAuth();
+                signInWithEmailAndPassword(auth, form.email.value, form.password.value)
+                    .then(() => {
+                        window.location.href = '../timson-pos-admin/admin-dashboard.html';
+                    })
+                    .catch(err => {
+                        submitBtn.disabled = false;
+                        btnText.textContent = 'Sign in to workspace';
+                        btnSpinner.classList.add('d-none');
+                        const cardHeader = document.querySelector('.login-card-header');
+                        const alertHtml = `<div class="alert alert-danger alert-dismissible fade show" role="alert">${err.message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+                        if(!document.querySelector('.alert')) {
+                            cardHeader.insertAdjacentHTML('afterend', alertHtml);
+                        }
+                    });
+            });
+        });
+    });
+</script>
+</body>
+</html>
