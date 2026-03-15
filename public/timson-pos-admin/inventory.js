@@ -84,7 +84,7 @@ setTimeout(() => {
 // CostPrice);
     for (let i = 0; i < window.dataArray.length; i++) {
       const element = window.dataArray[i]
-      console.log(element);
+    //   console.log(element);
       tableBody.innerHTML += `  <tr>
                                     <td class="ps-3 text-muted fw-medium">${element.
 barcode
@@ -109,10 +109,49 @@ barcode
     }
 
 
+    window.searchProduct = (e) => {
+    // console.log(e);
+    let dataFilter = window.dataArray;
+    // console.log(dataFilter);
+    
+    let searchInput = document.getElementById('searchInput').value.toLowerCase();
+const searchFilter = dataFilter.filter((dataFilter) => dataFilter.Product.includes(searchInput))
+console.log(searchFilter);
+ let tableBody = document.getElementById('tableBody')
+  tableBody.innerHTML = ''
+  for (let t = 0; t < searchFilter
+    .length; t++) {
+    const elementT = searchFilter[t];
+    // console.log(elementT);
+    tableBody.innerHTML += `<tr>
+                                    <td class="ps-3 text-muted fw-medium">${elementT.
+barcode
+}</td>
+                                    <td class="fw-bold text-dark">${elementT.Product}</td>
+                                    <td><span class="badge bg-light text-dark border">${elementT.ProductCategory}</span></td>
+                                    <td class="text-muted">₦${elementT.CostPrice}</td>
+                                    <td class="fw-bold text-dark">₦${elementT.SellingPrice}</td>
+                                    <td class="fw-bold text-dark">${elementT.StockQuantity}</td>
+                                    <td class="text-muted">${elementT.ReorderLevel}</td>
+                                    <td><span class="status-indicator status-in-stock"></span> In Stock</td>
+                                    <td class="text-end pe-3 action-btns">
+                                        <button class="btn btn-light text-info border-0 shadow-sm"
+                                            title="View Details"><i class="fas fa-eye"></i></button>
+                                        <button class="btn btn-light text-primary border-0 shadow-sm"
+                                            title="Edit Product"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-light text-danger border-0 shadow-sm"
+                                            title="Delete Product"><i class="fas fa-trash-alt"></i></button>
+                                    </td>
+                                </tr>`
+    
+    
+  }
+}
+    
 
 }, 1800);
 
 
 
 document.getElementById('saveProductBtn').addEventListener('click', saveProductBtn);
-// console.log(window.data);
+// console.log(window.data);                                                                                                                                        
