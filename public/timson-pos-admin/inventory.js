@@ -146,8 +146,11 @@ barcode
     
     
   }
-  const filterCategories = 
+//   console.log(dataFilter);
+  
 }
+
+const filterCategories = dataFilter.filter((dataFilter) => dataFilter.ProductCategory)
 
 }, 1800);
 
