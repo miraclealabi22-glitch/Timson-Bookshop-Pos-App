@@ -146,8 +146,8 @@ barcode
     
     
   }
+  const filterCategories = 
 }
-    
 
 }, 1800);
 
