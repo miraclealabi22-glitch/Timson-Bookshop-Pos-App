@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         
         const name = document.getElementById('empName').value.trim();
+        const username = document.getElementById('empUsername').value.trim();
         const email = document.getElementById('empEmail').value.trim();
         const password = document.getElementById('empPassword').value;
         const role = document.getElementById('empRole').value;
@@ -52,8 +53,11 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Creating...';
         
         try {
+            // Authenticate with a backend-only email to enable username login
+            const authEmail = username.toLowerCase().replace(/\s+/g, '') + '@timson.local';
+            
             // Use SECONDARY auth app to create user without overriding the main app session
-            const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+            const userCredential = await createUserWithEmailAndPassword(secondaryAuth, authEmail, password);
             const uid = userCredential.user.uid;
             
             // Immediately sign out this secondary instance so it can be reused safely later without issues
@@ -63,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const empData = {
                 id: uid,
                 name,
+                username,
                 email,
                 role,
                 status,
@@ -125,7 +130,7 @@ function renderTable() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td class="text-muted small">${(emp.id||'').substring(0,8)}...</td>
-            <td class="fw-bold">${emp.name || emp.email || 'N/A'}</td>
+            <td class="fw-bold">${emp.username || emp.name || emp.email || 'N/A'}</td>
             <td><span class="badge ${getRoleBadgeClass(emp.role)}">${emp.role || 'User'}</span></td>
             <td><span class="badge ${emp.status === 'Active' ? 'bg-success' : 'bg-secondary'}">${emp.status || 'Active'}</span></td>
             <td><button class="btn btn-sm btn-outline-danger btn-delete" data-id="${emp.id}"><i class="fas fa-trash data-id="${emp.id}" pointer-events-none"></i> Delete</button></td>

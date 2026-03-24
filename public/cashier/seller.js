@@ -22,10 +22,12 @@ let currentUser = { name: "Seller", id: null };
 let products = [];
 let customers = [];
 let cart = [];
+let sellerRefId = "";
 
 // --- Lifecycle ---
 document.addEventListener("DOMContentLoaded", () => {
     startClock();
+    generateRefNo();
     setupAuthListeners();
     setupDOMEventListeners();
 });
@@ -39,6 +41,12 @@ function startClock() {
         if(clockEl) clockEl.innerText = n.toLocaleTimeString();
         if(dateEl) dateEl.innerText = n.toLocaleDateString();
     }, 1000);
+}
+
+function generateRefNo() {
+    sellerRefId = 'ORD-' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 1000);
+    const dipRef = document.getElementById('sellerRefNo');
+    if(dipRef) dipRef.innerText = sellerRefId;
 }
 
 function showAlert(title, message, type='info') {
@@ -92,36 +100,28 @@ function loadDataSubscriptions() {
     onValue(ref(db, 'customersRef'), snapshot => {
         const data = snapshot.val() || {};
         customers = Object.entries(data).map(([k, v]) => ({ id: k, ...v }));
-        populateCustomerSelect();
+        populateCustomerList();
     });
 }
 
-function populateCustomerSelect() {
-    const custSel = document.getElementById('cartCustomerSelect');
-    if(!custSel) return;
-    
-    const curr = custSel.value;
-    custSel.innerHTML = '<option value="Walk-in">Walk-in Customer</option>';
+function populateCustomerList() {
+    const list = document.getElementById('customerDataList');
+    if(!list) return;
+    list.innerHTML = '';
     customers.forEach(c => {
-        custSel.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+        list.innerHTML += `<option value="${c.name}"></option>`;
     });
-    
-    if([...custSel.options].some(o => o.value === curr)) {
-        custSel.value = curr;
-    }
 }
 
 // --- DOM Events ---
 function setupDOMEventListeners() {
     const searchInput = document.getElementById('sellerSearchInput');
     const catFilter = document.getElementById('sellerCategoryFilter');
-    const discount = document.getElementById('cartDiscount');
     const clearBtn = document.getElementById('clearCartBtn');
     const applyBtn = document.getElementById('submitOrderBtn');
     
     if(searchInput) searchInput.addEventListener('input', renderCatalog);
     if(catFilter) catFilter.addEventListener('change', renderCatalog);
-    if(discount) discount.addEventListener('input', renderCart);
     if(clearBtn) clearBtn.addEventListener('click', () => { cart = []; renderCart(); });
     if(applyBtn) applyBtn.addEventListener('click', submitOrderToCashier);
 
@@ -191,6 +191,7 @@ window.addToCart = function(id) {
     document.getElementById('modalProductName').innerText = `Add ${prod.Product}`;
     document.getElementById('modalUnitType').value = 'unit';
     document.getElementById('modalQty').value = 1;
+    document.getElementById('modalDiscount').value = 0;
     updateModalPrice();
     
     const modalEl = document.getElementById('addToCartModal');
@@ -219,6 +220,7 @@ window.confirmAddToCart = function() {
     const id = document.getElementById('modalProductId').value;
     const uType = document.getElementById('modalUnitType').value;
     const qty = Number(document.getElementById('modalQty').value) || 1;
+    const disc = Number(document.getElementById('modalDiscount').value) || 0;
     const priceStr = document.getElementById('modalPrice').value;
     const price = Number(priceStr);
     
@@ -227,8 +229,8 @@ window.confirmAddToCart = function() {
         return;
     }
     
-    // Check if adding same product + unit type
-    const existingIndex = cart.findIndex(c => c.id === id && c.unitType === uType);
+    // Check if adding same product + unit type + discount strictly
+    const existingIndex = cart.findIndex(c => c.id === id && c.unitType === uType && c.discountPercent === disc);
     if(existingIndex !== -1) {
         cart[existingIndex].qty += qty;
     } else {
@@ -237,14 +239,13 @@ window.confirmAddToCart = function() {
             name: currentModalProduct.Product,
             price: price,
             qty: qty,
+            discountPercent: disc,
             maxQty: Number(currentModalProduct.StockQuantity) || 0,
             unitType: uType
         });
     }
     
     const max = Number(currentModalProduct.StockQuantity) || 0;
-    // Note: Stock deduction checks logic will be handled fully by cashier upon checkout. 
-    // Sellers can build orders.
     
     const modalEl = document.getElementById('addToCartModal');
     const modal = bootstrap.Modal.getInstance(modalEl);
@@ -289,7 +290,6 @@ function renderCart() {
     const container = document.getElementById('cartItemsList');
     const emptyMsg = document.getElementById('emptyCartMsg');
     const badge = document.getElementById('cartCountBadge');
-    const sTot = document.getElementById('cartSubtotal');
     const gTot = document.getElementById('cartTotal');
     const btn = document.getElementById('submitOrderBtn');
     
@@ -297,7 +297,6 @@ function renderCart() {
     if(cart.length === 0) {
         emptyMsg.classList.remove('d-none');
         badge.innerText = '0 Items';
-        sTot.innerText = '₦0.00';
         gTot.innerText = '₦0.00';
         btn.disabled = true;
         return;
@@ -306,10 +305,13 @@ function renderCart() {
     emptyMsg.classList.add('d-none');
     btn.disabled = false;
     
-    let sub = 0; let totalItems = 0;
+    let gTotal = 0; let totalItems = 0;
     cart.forEach((c, i) => {
-        const tot = c.price * c.qty;
-        sub += tot;
+        const baseTot = c.price * c.qty;
+        const discountAmt = baseTot * (c.discountPercent / 100);
+        const itemFinal = baseTot - discountAmt;
+        
+        gTotal += itemFinal;
         totalItems += c.qty;
         
         container.innerHTML += `
@@ -318,8 +320,9 @@ function renderCart() {
                     <span class="fw-bold text-dark w-75 text-truncate" title="${c.name}">${c.name} (${c.unitType})</span>
                     <i class="fas fa-trash text-danger" style="cursor:pointer;" onclick="removeFromCart(${i})"></i>
                 </div>
+                ${c.discountPercent > 0 ? `<div class="text-danger small fw-bold mb-1"><i class="fas fa-tag"></i> ${c.discountPercent}% OFF</div>` : ''}
                 <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-primary fw-bold small">₦${c.price.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                    <span class="text-primary fw-bold small">₦${(c.price - (c.price * (c.discountPercent/100))).toLocaleString(undefined, {minimumFractionDigits:2})} / ea</span>
                     <div class="input-group input-group-sm" style="width: 100px;">
                         <button class="btn btn-outline-secondary px-2" onclick="changeCartQty(${i}, -1)">-</button>
                         <input type="text" class="form-control text-center px-1 bg-white fw-bold" value="${c.qty}" readonly>
@@ -331,10 +334,6 @@ function renderCart() {
     });
     
     badge.innerText = `${totalItems} Items`;
-    sTot.innerText = `₦${sub.toLocaleString(undefined, {minimumFractionDigits:2})}`;
-    
-    const disc = Number(document.getElementById('cartDiscount').value)||0;
-    const gTotal = sub - (sub * (disc/100));
     gTot.innerText = `₦${gTotal.toLocaleString(undefined, {minimumFractionDigits:2})}`;
 }
 
@@ -346,25 +345,34 @@ async function submitOrderToCashier() {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
     
-    const cId = document.getElementById('cartCustomerSelect').value;
-    let cName = "Walk-in";
-    if(cId !== "Walk-in") {
-        const cObj = customers.find(x => x.id === cId);
-        if(cObj) cName = cObj.name;
+    const cInput = document.getElementById('cartCustomerInput').value.trim();
+    let cId = null;
+    let cName = cInput || "Walk-in";
+    
+    // Check if the typed customer exists to link ID
+    const cObj = customers.find(x => x.name.toLowerCase() === cName.toLowerCase());
+    if(cObj) {
+        cId = cObj.id;
+        cName = cObj.name;
     }
     
-    let sub = 0; cart.forEach(c => sub+= (c.price*c.qty));
-    const disc = Number(document.getElementById('cartDiscount').value)||0;
-    const finalTotal = sub - (sub * (disc/100));
+    let sub = 0; 
+    let finalTotal = 0;
+    cart.forEach(c => {
+        const t = c.price * c.qty;
+        sub += t;
+        finalTotal += t - (t * (c.discountPercent / 100));
+    });
     
     const payload = {
+        refNo: sellerRefId,
         sellerName: currentUser.name,
         sellerId: currentUser.id,
-        customerId: cId === "Walk-in" ? null : cId,
+        customerId: cId,
         customerName: cName,
         items: cart,
         subtotal: sub,
-        discountPercent: disc,
+        discountPercent: 0, // General discount is 0 now, tracked per item
         totalDue: finalTotal,
         timestamp: new Date().toISOString()
     };
@@ -373,8 +381,8 @@ async function submitOrderToCashier() {
         await push(ref(db, 'pendingOrdersRef'), payload);
         showAlert("Success", "Order dispatched to Cashier!", "success");
         cart = [];
-        document.getElementById('cartDiscount').value = 0;
-        document.getElementById('cartCustomerSelect').value = "Walk-in";
+        document.getElementById('cartCustomerInput').value = "";
+        generateRefNo();
         renderCart();
     } catch(err) {
         console.error(err);

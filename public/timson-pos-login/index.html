@@ -200,6 +200,10 @@
                 min-height: 250px;
             }
         }
+        @media (max-width: 575.98px) {
+            .login-wrapper { padding: 1rem; }
+            .login-card { padding: 1rem; }
+        }
     </style>
 </head>
 <body>
@@ -242,10 +246,10 @@
 
                 <form id="loginForm" novalidate>
                     <div class="mb-4">
-                        <label for="email" class="form-label">Email address</label>
-                        <input type="email" class="form-control" id="email" placeholder="admin@timsonbookshop.com" required autocomplete="email">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" placeholder="Enter your username (e.g. Miracle)" required>
                         <div class="invalid-feedback">
-                            Please provide a valid email address.
+                            Please provide your username.
                         </div>
                     </div>
 
@@ -328,11 +332,14 @@
             btnSpinner.classList.remove('d-none');
 
             try {
-                const userCredential = await signInWithEmailAndPassword(auth, form.email.value, form.password.value);
+                const usernameVal = form.username.value.trim().toLowerCase().replace(/\s+/g, '');
+                const authEmail = usernameVal.includes('@') ? usernameVal : (usernameVal + '@timson.local');
+                
+                const userCredential = await signInWithEmailAndPassword(auth, authEmail, form.password.value);
                 const user = userCredential.user;
                 
                 // Determine role-based redirection
-                const email = user.email.toLowerCase();
+                const email = user.email ? user.email.toLowerCase() : '';
                 
                 // First attempt to get role from Realtime DB (usersRef/uid/role)
                 let userRole = null;

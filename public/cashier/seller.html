@@ -20,11 +20,14 @@
         .sidebar-menu-link:hover, .sidebar-menu-link.active { background-color: rgba(255,255,255,0.2); }
         .action-icon { width: 25px; text-align: center; margin-right: 10px; }
         
+        /* Custom panel heights for responsive view */
+        .catalog-panel-container { height: calc(100vh - 220px); overflow-y: auto; }
+        .cart-panel-container { height: calc(100vh - 120px); }
+        
         @media (max-width: 991.98px) {
-            #sidebar { margin-left: -250px; }
-            #sidebar.active { margin-left: 0; }
-            #content { width: 100%; }
-            #content.active { width: calc(100% - 250px); }
+            .catalog-panel-container { height: 400px; }
+            .cart-panel-container { height: 600px; max-height: calc(100vh - 20px); }
+            /* Order swap on mobile so cart is on top, but it's optional. Let's keep catalog first, but controlled height. */
         }
         
         .main-panel-header { background-color: #0f16bb; color: white; padding: 10px 15px; border-radius: 5px 5px 0 0; }
@@ -96,7 +99,7 @@
                             </div>
                         </div>
                         
-                        <div class="table-responsive" style="height: calc(100vh - 220px); overflow-y: auto;">
+                        <div class="table-responsive catalog-panel-container">
                             <table class="table table-hover align-middle mb-0 bg-white">
                                 <thead style="position: sticky; top: 0; background: #fff; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                                     <tr>
@@ -117,19 +120,22 @@
 
                 <!-- Right Cart Panel -->
                 <div class="col-lg-4">
-                    <div class="pos-panel d-flex flex-column" style="height: calc(100vh - 120px);">
+                    <div class="pos-panel d-flex flex-column cart-panel-container">
                         <div class="p-3 border-bottom bg-light">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-shopping-basket text-primary me-2"></i> Current Order</h5>
+                                <div>
+                                    <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-shopping-basket text-primary me-2"></i> Current Order</h5>
+                                    <small class="text-secondary fw-bold">Ref: <span id="sellerRefNo">---</span></small>
+                                </div>
                                 <span id="cartCountBadge" class="badge bg-primary rounded-pill px-3 py-2">0 Items</span>
                             </div>
                             
                             <!-- Customer Selection -->
                             <div>
-                                <label class="form-label small fw-bold text-muted mb-1">Select Customer</label>
-                                <select id="cartCustomerSelect" class="form-select border-0 shadow-sm">
-                                    <option value="Walk-in">Walk-in Customer</option>
-                                </select>
+                                <label class="form-label small fw-bold text-muted mb-1">Customer Name</label>
+                                <input type="text" id="cartCustomerInput" class="form-control form-control-sm border-0 shadow-sm" placeholder="Walk-in Customer" list="customerDataList">
+                                <datalist id="customerDataList"></datalist>
+                                <small class="text-primary small mt-1 d-block" style="cursor: pointer;" onclick="document.getElementById('cartCustomerInput').value=''"><i class="fas fa-times-circle"></i> Clear customer</small>
                             </div>
                         </div>
 
@@ -145,15 +151,6 @@
 
                         <!-- Cart Totals & Checkout -->
                         <div class="p-3 bg-light border-top mt-auto rounded-bottom">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted fw-bold">Subtotal:</span>
-                                <span class="fw-bold" id="cartSubtotal">₦0.00</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-3 align-items-center">
-                                <span class="text-muted fw-bold">Discount (%):</span>
-                                <input type="number" id="cartDiscount" class="form-control form-control-sm text-end w-25 border-0 shadow-sm" value="0" min="0" max="100">
-                            </div>
-                            <hr class="my-2 border-secondary">
                             <div class="d-flex justify-content-between mb-3">
                                 <span class="fs-5 fw-bold text-dark">Total Due:</span>
                                 <span class="fs-5 fw-bold text-primary" id="cartTotal">₦0.00</span>
@@ -194,11 +191,15 @@
                         </select>
                     </div>
                     <div class="row g-2 mb-3">
-                        <div class="col-6">
+                        <div class="col-4">
                             <label class="form-label small fw-bold mb-1 text-muted">Qty</label>
                             <input type="number" class="form-control form-control-sm" id="modalQty" value="1" min="1">
                         </div>
-                        <div class="col-6">
+                        <div class="col-4">
+                            <label class="form-label small fw-bold mb-1 text-muted">Disc (%)</label>
+                            <input type="number" class="form-control form-control-sm text-danger fw-bold" id="modalDiscount" value="0" min="0" max="100">
+                        </div>
+                        <div class="col-4">
                             <label class="form-label small fw-bold mb-1 text-muted">Price (₦)</label>
                             <input type="text" class="form-control form-control-sm bg-light text-primary fw-bold" id="modalPrice" readonly>
                         </div>
@@ -213,9 +214,25 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="seller.js"></script>
     <script>
-        document.getElementById('sidebarCollapse').addEventListener('click', function () {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('content').classList.toggle('active');
+        const sidebarCollapseBtn = document.getElementById('sidebarCollapse');
+        if (sidebarCollapseBtn) {
+            sidebarCollapseBtn.addEventListener('click', function () {
+                document.getElementById('sidebar').classList.toggle('active');
+                document.getElementById('content').classList.toggle('active');
+                document.body.classList.toggle('sidebar-open');
+            });
+        }
+        
+        // Add mobile overlay click listener
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 991.98 && document.body.classList.contains('sidebar-open')) {
+                const sidebar = document.getElementById('sidebar');
+                if (!sidebar.contains(e.target) && e.target !== sidebarCollapseBtn && !sidebarCollapseBtn.contains(e.target)) {
+                    document.getElementById('sidebar').classList.remove('active');
+                    document.getElementById('content').classList.remove('active');
+                    document.body.classList.remove('sidebar-open');
+                }
+            }
         });
     </script>
 </body>

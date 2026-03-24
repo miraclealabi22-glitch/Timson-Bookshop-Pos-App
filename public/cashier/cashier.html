@@ -21,13 +21,6 @@
         .sidebar-menu-link:hover, .sidebar-menu-link.active { background-color: rgba(255,255,255,0.2); }
         .action-icon { width: 25px; text-align: center; margin-right: 10px; }
         
-        @media (max-width: 991.98px) {
-            #sidebar { margin-left: -250px; }
-            #sidebar.active { margin-left: 0; }
-            #content { width: 100%; }
-            #content.active { width: calc(100% - 250px); }
-        }
-        
         .main-panel-header { background-color: #1782c5; color: white; padding: 10px 15px; border-radius: 5px 5px 0 0; }
         .pos-panel { background: #fff; border: 1px solid #dee2e6; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
     </style>
@@ -355,9 +348,25 @@
     <script type="module" src="cashier.js"></script>
     <script>
         // Sidebar Toggle logic
-        document.getElementById('sidebarCollapse').addEventListener('click', function () {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('content').classList.toggle('active');
+        const sidebarCollapseBtn = document.getElementById('sidebarCollapse');
+        if (sidebarCollapseBtn) {
+            sidebarCollapseBtn.addEventListener('click', function () {
+                document.getElementById('sidebar').classList.toggle('active');
+                document.getElementById('content').classList.toggle('active');
+                document.body.classList.toggle('sidebar-open');
+            });
+        }
+        
+        // Add mobile overlay click listener
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 991.98 && document.body.classList.contains('sidebar-open')) {
+                const sidebar = document.getElementById('sidebar');
+                if (!sidebar.contains(e.target) && e.target !== sidebarCollapseBtn && !sidebarCollapseBtn.contains(e.target)) {
+                    document.getElementById('sidebar').classList.remove('active');
+                    document.getElementById('content').classList.remove('active');
+                    document.body.classList.remove('sidebar-open');
+                }
+            }
         });
         
         // Tab system logic
