@@ -34,6 +34,25 @@
         .trending-down {
             color: #ef4444;
         }
+
+        .stock-table-wrapper {
+            overflow-x: auto;
+            overflow-y: hidden;
+            width: 100%;
+        }
+
+        .stock-table-wrapper table {
+            min-width: 900px;
+            width: 100%;
+        }
+
+        .stock-table-wrapper thead th {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 5;
+            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.05);
+        }
     </style>
 </head>
 
@@ -293,28 +312,30 @@
                     </div>
                 </div>
                 <div class="card-body p-0 mt-3">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 border-top">
+                    <div class="stock-table-wrapper table-responsive">
+                        <table class="table table-hover align-middle mb-0 border-top" id="restockTable">
                             <thead class="table-light text-muted">
                                 <tr>
                                     <th class="ps-4">Product Name</th>
                                     <th>Category</th>
                                     <th>Current Stock</th>
+                                    <th>Stock Balance</th>
                                     <th>Reorder Level</th>
                                     <th>Rec. Restock Qty</th>
                                     <th class="text-end pe-4">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
+                                <tr data-product="Dune" data-current="0" data-rec="20">
                                     <td class="ps-4">
                                         <span class="fw-bold text-dark d-block">Dune</span>
                                         <small class="text-muted">#PRD-8801</small>
                                     </td>
                                     <td><span class="badge bg-light text-dark border">Books</span></td>
-                                    <td><span class="badge bg-danger text-white rounded-pill px-3 py-1">0</span></td>
-                                    <td class="text-muted fw-medium">10</td>
-                                    <td class="fw-bold text-primary">+20</td>
+                                    <td><span class="badge bg-danger text-white rounded-pill px-3 py-1 current-stock">0</span></td>
+                                    <td><span class="badge bg-info text-dark rounded-pill px-3 py-1 stock-balance">20</span></td>
+                                    <td class="text-muted fw-medium reorder-level">10</td>
+                                    <td class="fw-bold text-primary restock-count">+20</td>
                                     <td class="text-end pe-4 action-btns">
                                         <button class="btn btn-outline-primary fw-medium px-3" data-bs-toggle="modal"
                                             data-bs-target="#updateStockModal" data-product="Dune" data-current="0"
@@ -323,15 +344,16 @@
                                         </button>
                                     </td>
                                 </tr>
-                                <tr>
+                                <tr data-product="Black Gel Pens (10x)" data-current="2" data-rec="30">
                                     <td class="ps-4">
                                         <span class="fw-bold text-dark d-block">Black Gel Pens (10x)</span>
                                         <small class="text-muted">#PRD-9102</small>
                                     </td>
                                     <td><span class="badge bg-light text-dark border">Stationery</span></td>
-                                    <td><span class="badge bg-danger text-white rounded-pill px-3 py-1">2</span></td>
-                                    <td class="text-muted fw-medium">15</td>
-                                    <td class="fw-bold text-primary">+30</td>
+                                    <td><span class="badge bg-danger text-white rounded-pill px-3 py-1 current-stock">2</span></td>
+                                    <td><span class="badge bg-info text-dark rounded-pill px-3 py-1 stock-balance">32</span></td>
+                                    <td class="text-muted fw-medium reorder-level">15</td>
+                                    <td class="fw-bold text-primary restock-count">+30</td>
                                     <td class="text-end pe-4 action-btns">
                                         <button class="btn btn-outline-primary fw-medium px-3" data-bs-toggle="modal"
                                             data-bs-target="#updateStockModal" data-product="Black Gel Pens (10x)"
@@ -340,15 +362,16 @@
                                         </button>
                                     </td>
                                 </tr>
-                                <tr>
+                                <tr data-product="The Great Gatsby" data-current="5" data-rec="15">
                                     <td class="ps-4">
                                         <span class="fw-bold text-dark d-block">The Great Gatsby</span>
                                         <small class="text-muted">#PRD-1001</small>
                                     </td>
                                     <td><span class="badge bg-light text-dark border">Books</span></td>
-                                    <td><span class="badge bg-warning text-dark rounded-pill px-3 py-1">5</span></td>
-                                    <td class="text-muted fw-medium">10</td>
-                                    <td class="fw-bold text-primary">+15</td>
+                                    <td><span class="badge bg-warning text-dark rounded-pill px-3 py-1 current-stock">5</span></td>
+                                    <td><span class="badge bg-info text-dark rounded-pill px-3 py-1 stock-balance">20</span></td>
+                                    <td class="text-muted fw-medium reorder-level">10</td>
+                                    <td class="fw-bold text-primary restock-count">+15</td>
                                     <td class="text-end pe-4 action-btns">
                                         <button class="btn btn-outline-primary fw-medium px-3" data-bs-toggle="modal"
                                             data-bs-target="#updateStockModal" data-product="The Great Gatsby"
@@ -357,15 +380,16 @@
                                         </button>
                                     </td>
                                 </tr>
-                                <tr>
+                                <tr data-product="Atomic Habits" data-current="8" data-rec="20">
                                     <td class="ps-4">
                                         <span class="fw-bold text-dark d-block">Atomic Habits</span>
                                         <small class="text-muted">#PRD-3042</small>
                                     </td>
                                     <td><span class="badge bg-light text-dark border">Books</span></td>
-                                    <td><span class="badge bg-warning text-dark rounded-pill px-3 py-1">8</span></td>
-                                    <td class="text-muted fw-medium">15</td>
-                                    <td class="fw-bold text-primary">+20</td>
+                                    <td><span class="badge bg-warning text-dark rounded-pill px-3 py-1 current-stock">8</span></td>
+                                    <td><span class="badge bg-info text-dark rounded-pill px-3 py-1 stock-balance">28</span></td>
+                                    <td class="text-muted fw-medium reorder-level">15</td>
+                                    <td class="fw-bold text-primary restock-count">+20</td>
                                     <td class="text-end pe-4 action-btns">
                                         <button class="btn btn-outline-primary fw-medium px-3" data-bs-toggle="modal"
                                             data-bs-target="#updateStockModal" data-product="Atomic Habits"
@@ -374,15 +398,16 @@
                                         </button>
                                     </td>
                                 </tr>
-                                <tr>
+                                <tr data-product="Moleskine Notebook" data-current="12" data-rec="30">
                                     <td class="ps-4">
                                         <span class="fw-bold text-dark d-block">Moleskine Notebook</span>
                                         <small class="text-muted">#PRD-7212</small>
                                     </td>
                                     <td><span class="badge bg-light text-dark border">Stationery</span></td>
-                                    <td><span class="badge bg-warning text-dark rounded-pill px-3 py-1">12</span></td>
-                                    <td class="text-muted fw-medium">20</td>
-                                    <td class="fw-bold text-primary">+30</td>
+                                    <td><span class="badge bg-warning text-dark rounded-pill px-3 py-1 current-stock">12</span></td>
+                                    <td><span class="badge bg-info text-dark rounded-pill px-3 py-1 stock-balance">42</span></td>
+                                    <td class="text-muted fw-medium reorder-level">20</td>
+                                    <td class="fw-bold text-primary restock-count">+30</td>
                                     <td class="text-end pe-4 action-btns">
                                         <button class="btn btn-outline-primary fw-medium px-3" data-bs-toggle="modal"
                                             data-bs-target="#updateStockModal" data-product="Moleskine Notebook"
@@ -458,7 +483,7 @@
     <!-- Custom Sidebar JS -->
     <script src="admin.js"></script>
     <!-- Stock Control Specific JS -->
-    <script src="stock-control.js"></script>
+    <script src="stock-control.js" type="module"></script>
 </body>
 
 </html>

@@ -1,170 +1,155 @@
+// import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+
 document.addEventListener("DOMContentLoaded", function () {
+    const firebaseConfig = {
+        apiKey: "AIzaSyACgmBzV74SwJLVyUCMdN1xOxZjMI4UgCg",
+        authDomain: "posapp-ed05a.firebaseapp.com",
+        databaseURL: "https://posapp-ed05a-default-rtdb.firebaseio.com",
+        projectId: "posapp-ed05a",
+        storageBucket: "posapp-ed05a.firebasestorage.app",
+        messagingSenderId: "486175914054",
+        appId: "1:486175914054:web:b2f7d71ae98c451f417247"
+    };
 
-    // --- Chart.js: Stock Movement Analytics ---
-    const ctx = document.getElementById('stockChart');
-    if (ctx) {
-        Chart.defaults.font.family = "'Inter', sans-serif";
-        Chart.defaults.color = '#64748b'; // Tailwind slate-500
-
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                datasets: [
-                    {
-                        label: 'Units Sold',
-                        data: [420, 380, 550, 480],
-                        backgroundColor: '#4361ee', // Primary
-                        borderRadius: 4,
-                        barPercentage: 0.6,
-                        categoryPercentage: 0.8
-                    },
-                    {
-                        label: 'Units Restocked',
-                        data: [150, 600, 100, 800],
-                        backgroundColor: '#10b981', // Success
-                        borderRadius: 4,
-                        barPercentage: 0.6,
-                        categoryPercentage: 0.8
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        align: 'end',
-                        labels: {
-                            usePointStyle: true,
-                            boxWidth: 8,
-                            padding: 20,
-                            font: { weight: '500' }
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: '#111827',
-                        padding: 12,
-                        titleFont: { size: 13, weight: '500' },
-                        bodyFont: { size: 14, weight: 'bold' },
-                        cornerRadius: 8
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            borderDash: [4, 4],
-                            color: '#e2e8f0',
-                            drawBorder: false
-                        },
-                        ticks: { padding: 10 }
-                    },
-                    x: {
-                        grid: {
-                            display: false,
-                            drawBorder: false
-                        },
-                        ticks: {
-                            padding: 10,
-                            font: { weight: '500' }
-                        }
-                    }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index',
-                },
-            }
-        });
-    }
-
-
-    // --- Update Stock Modal Logic ---
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const restockTable = document.getElementById('restockTable');
     const updateStockModal = document.getElementById('updateStockModal');
     const addedQuantityInput = document.getElementById('addedQuantity');
     const newTotalStockSpan = document.getElementById('newTotalStock');
-
     let currentBaseStock = 0;
+    let currentEditId = null;
+
+    const payAttentionToLowStock = (current, reorder) => {
+        if (current <= reorder) return 'bg-danger text-white';
+        if (current <= reorder * 1.5) return 'bg-warning text-dark';
+        return 'bg-success text-white';
+    };
+
+    const getStockBalanceDisplay = (item) => {
+        const cartonQty = Number(item.cartonQuantity || 0);
+        const cartonSize = Number(item.cartonSize || 0);
+        const unitQty = Number(item.unitQuantity || 0);
+
+        if (cartonSize > 0) {
+            const totalUnits = cartonQty * cartonSize + unitQty;
+            const fullCartons = Math.floor(totalUnits / cartonSize);
+            const remainder = totalUnits % cartonSize;
+            let result = `${fullCartons} ctn${fullCartons === 1 ? '' : 's'}`;
+            if (remainder > 0) result += ` ${remainder} pcs`;
+            return result;
+        }
+
+        const currentStock = Number(item.StockQuantity || 0);
+        return `${currentStock} pcs`;
+    };
+
+    const computeRecommendedRestock = (currentStock, reorderLevel) => {
+        const target = Number(reorderLevel || 0);
+        const current = Number(currentStock || 0);
+        return Math.max(0, target - current);
+    };
+
+    const renderTable = (items = []) => {
+        if (!restockTable) return;
+        const body = restockTable.querySelector('tbody');
+        body.innerHTML = '';
+
+        items.forEach(item => {
+            const currentStock = Number(item.StockQuantity || 0);
+            const reorderLevel = Number(item.ReorderLevel || 0);
+            const recRestock = computeRecommendedRestock(currentStock, reorderLevel);
+            const lowStockClass = payAttentionToLowStock(currentStock, reorderLevel);
+
+            const row = document.createElement('tr');
+            row.dataset.productId = item.id;
+            row.dataset.current = currentStock;
+            row.dataset.rec = recRestock;
+
+            row.innerHTML = `
+                <td class="ps-4">
+                    <span class="fw-bold text-dark d-block">${item.Product || 'Unknown'}</span>
+                    <small class="text-muted">${item.barcode || ''}</small>
+                </td>
+                <td><span class="badge bg-light text-dark border">${item.ProductCategory || 'Unspecified'}</span></td>
+                <td><span class="badge ${lowStockClass} rounded-pill px-3 py-1 current-stock">${currentStock}</span></td>
+                <td><span class="badge bg-info text-dark rounded-pill px-3 py-1 stock-balance">${getStockBalanceDisplay(item)}</span></td>
+                <td class="text-muted fw-medium reorder-level">${reorderLevel}</td>
+                <td class="fw-bold text-primary restock-count">+${recRestock}</td>
+                <td class="text-end pe-4 action-btns">
+                    <button class="btn btn-outline-primary fw-medium px-3" data-bs-toggle="modal" data-bs-target="#updateStockModal"
+                        data-product-id="${item.id}" data-product-name="${item.Product || ''}" data-current-stock="${currentStock}" data-rec="${recRestock}">
+                        <i class="fas fa-plus me-1"></i> Update Stock
+                    </button>
+                </td>
+            `;
+
+            body.appendChild(row);
+        });
+    };
+
+    const stockRef = ref(database, 'stockRef');
+    onValue(stockRef, (snapshot) => {
+        const data = snapshot.val();
+        const products = data ? Object.entries(data).map(([id, value]) => ({ id, ...value })) : [];
+        renderTable(products);
+    });
 
     if (updateStockModal) {
-        // Modal Event: When modal is about to be shown
         updateStockModal.addEventListener('show.bs.modal', function (event) {
-            // Button that triggered the modal
             const button = event.relatedTarget;
+            const product = button.getAttribute('data-product-name');
+            const productId = button.getAttribute('data-product-id');
+            const currentStock = Number(button.getAttribute('data-current-stock') || 0);
+            const recStock = Number(button.getAttribute('data-rec') || 0);
 
-            // Extract info from data-* attributes
-            const productName = button.getAttribute('data-product');
-            const currentStock = parseInt(button.getAttribute('data-current'), 10);
-            const recStock = parseInt(button.getAttribute('data-rec'), 10);
-
-            // Set base stock state
             currentBaseStock = currentStock;
+            currentEditId = productId;
 
-            // Update modal UI elements
-            document.getElementById('modalProductName').textContent = productName;
+            document.getElementById('modalProductName').textContent = product;
             document.getElementById('modalCurrentStock').textContent = currentStock;
             document.getElementById('modalRecStock').textContent = recStock;
-
-            // Reset inputs
-            addedQuantityInput.value = '';
-            newTotalStockSpan.textContent = currentStock;
+            if (addedQuantityInput) addedQuantityInput.value = '';
+            if (newTotalStockSpan) newTotalStockSpan.textContent = currentStock;
         });
+    }
 
-        // Event: Use recommended link clicked
-        const useRecommendedLink = document.getElementById('useRecommendedLink');
-        if (useRecommendedLink) {
-            useRecommendedLink.addEventListener('click', function () {
-                const recStock = document.getElementById('modalRecStock').textContent;
-                addedQuantityInput.value = recStock;
-                // Dispatch input event to recalculate total
-                addedQuantityInput.dispatchEvent(new Event('input'));
-            });
-        }
+    if (addedQuantityInput) {
+        addedQuantityInput.addEventListener('input', function () {
+            const addedVal = parseInt(this.value, 10) || 0;
+            if (newTotalStockSpan) newTotalStockSpan.textContent = currentBaseStock + addedVal;
+        });
+    }
 
-        // Event: Real-time calculation of new total quantity
-        if (addedQuantityInput) {
-            addedQuantityInput.addEventListener('input', function () {
-                const addedVal = parseInt(this.value, 10) || 0;
-                newTotalStockSpan.textContent = currentBaseStock + addedVal;
-            });
-        }
+    const confirmStockUpdateBtn = document.getElementById('confirmStockUpdateBtn');
+    if (confirmStockUpdateBtn) {
+        confirmStockUpdateBtn.addEventListener('click', function () {
+            const form = document.getElementById('updateStockForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
 
-        // Event: Confirm Update
-        const confirmStockUpdateBtn = document.getElementById('confirmStockUpdateBtn');
-        if (confirmStockUpdateBtn) {
-            confirmStockUpdateBtn.addEventListener('click', function () {
-                const form = document.getElementById('updateStockForm');
+            const addedAmount = parseInt(addedQuantityInput.value, 10) || 0;
+            const finalAmount = currentBaseStock + addedAmount;
 
-                if (!form.checkValidity()) {
-                    form.reportValidity();
-                    return;
-                }
+            if (!currentEditId) {
+                alert('No product selected for update.');
+                return;
+            }
 
-                // Gather data for mock backend update
-                const addedAmount = parseInt(addedQuantityInput.value, 10);
-                const finalAmount = currentBaseStock + addedAmount;
-                const product = document.getElementById('modalProductName').textContent;
-
-                // Mock Firebase/Backend call snippet
-                /*
-                db.collection("products").doc(productId).update({
-                    stockQuantity: finalAmount,
-                    lastRestockedAt: new Date().toISOString()
-                }).then(() => {
-                    close modal and refresh UI
+            const productRef = ref(database, `stockRef/${currentEditId}`);
+            update(productRef, { StockQuantity: finalAmount })
+                .then(() => {
+                    const modalInstance = bootstrap.Modal.getInstance(updateStockModal);
+                    if (modalInstance) modalInstance.hide();
+                    alert(`Successfully restocked ${addedAmount} units! New total: ${finalAmount}`);
+                })
+                .catch((error) => {
+                    console.error('Stock update failed', error);
+                    alert('Stock update failed: ' + (error.message || error));
                 });
-                */
-
-                console.log(`Updated "${product}": Added ${addedAmount}. New Total: ${finalAmount}`);
-
-                // Hide modal and show success (mocked)
-                const modalInstance = bootstrap.Modal.getInstance(updateStockModal);
-                modalInstance.hide();
-
-                alert(`Successfully restocked ${addedAmount} units of ${product}!`);
-            });
-        }
+        });
     }
 });

@@ -1,0 +1,160 @@
+/* Modern Dashboard UI Overrides for Cashier */
+body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.bg-light-main {
+    background-color: #f4f7fa; /* light off-white background */
+}
+
+/* Sidebar Styling */
+.sidebar-modern {
+    width: 270px;
+    background-color: #0c1a32; /* Dark Navy */
+    min-height: 100vh;
+    padding: 20px 0;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+    flex-shrink: 0;
+    z-index: 1040;
+}
+
+.sidebar-header {
+    padding: 0;
+}
+
+.logo-square {
+    width: 36px;
+    height: 36px;
+    background-color: #2563eb; /* Blue */
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.1rem;
+}
+
+.sidebar-nav .nav-link {
+    padding: 12px 24px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-nav .nav-link i {
+    width: 28px;
+    text-align: left;
+    font-size: 1.1rem;
+    margin-right: 12px;
+}
+
+.sidebar-nav .nav-link:hover {
+    opacity: 1;
+    background-color: rgba(255,255,255,0.03);
+}
+
+.sidebar-nav .nav-link.active-blue {
+    opacity: 1;
+    background-color: #2563eb;
+    color: #ffffff !important;
+    border-radius: 0 24px 24px 0;
+    margin-right: 20px;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+}
+
+/* Header */
+.top-bar {
+    z-index: 1030;
+}
+
+.header-title {
+    color: #1e293b;
+    letter-spacing: -0.5px;
+    font-size: 1.25rem;
+}
+
+.avatar-circle.bg-purple {
+    background-color: #8b5cf6;
+    box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* Main Content Typography */
+.page-main-title {
+    font-size: 1.7rem;
+    letter-spacing: -0.5px;
+    color: #0f172a;
+}
+
+.blue-banner {
+    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2), 0 2px 4px -1px rgba(59, 130, 246, 0.1);
+}
+
+/* Action Cards */
+.action-card {
+    background-color: #ffffff;
+    padding: 16px 20px;
+    font-weight: 500;
+    color: #475569;
+    border-left: 4px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+    border: 1px solid #e2e8f0;
+}
+
+.action-card:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05) !important;
+}
+
+.action-card.active-action {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+    border-left: 4px solid #3b82f6;
+}
+
+/* Modern Table */
+.modern-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.modern-table thead {
+    background-color: #f8fafc; /* Light slate */
+}
+
+.modern-table thead th {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 16px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    border-top: 1px solid #e2e8f0;
+}
+
+.modern-table tbody td {
+    padding: 16px 14px;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: middle;
+}
+
+.table-row-hover:hover {
+    background-color: #f8fafc;
+}
