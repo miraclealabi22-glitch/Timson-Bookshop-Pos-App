@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -47,21 +48,26 @@
             left: -50%;
             width: 200%;
             height: 200%;
-            background-image: 
-                radial-gradient(circle at center, rgba(255,255,255,0.06) 0, rgba(255,255,255,0.06) 2px, transparent 2px);
+            background-image:
+                radial-gradient(circle at center, rgba(255, 255, 255, 0.06) 0, rgba(255, 255, 255, 0.06) 2px, transparent 2px);
             background-size: 40px 40px;
             animation: movePattern 40s linear infinite;
             z-index: 1;
         }
 
-        .branding-section > * {
+        .branding-section>* {
             z-index: 2;
             position: relative;
         }
 
         @keyframes movePattern {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-80px); }
+            0% {
+                transform: translateY(0);
+            }
+
+            100% {
+                transform: translateY(-80px);
+            }
         }
 
         /* Login Card Styling */
@@ -135,7 +141,8 @@
             transition: all 0.2s ease;
         }
 
-        .btn-primary:hover, .btn-primary:focus {
+        .btn-primary:hover,
+        .btn-primary:focus {
             background-color: var(--primary-hover);
             border-color: var(--primary-hover);
             transform: translateY(-1px);
@@ -183,14 +190,14 @@
         .brand-logo-icon {
             width: 64px;
             height: 64px;
-            background-color: rgba(255,255,255,0.1);
+            background-color: rgba(255, 255, 255, 0.1);
             border-radius: 1rem;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 1.5rem;
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         /* Responsive */
@@ -200,191 +207,207 @@
                 min-height: 250px;
             }
         }
+
         @media (max-width: 575.98px) {
-            .login-wrapper { padding: 1rem; }
-            .login-card { padding: 1rem; }
+            .login-wrapper {
+                padding: 1rem;
+            }
+
+            .login-card {
+                padding: 1rem;
+            }
         }
     </style>
 </head>
+
 <body>
 
-<div class="container-fluid p-0">
-    <div class="row g-0 min-vh-100">
-        
-        <!-- Left Column: Branding -->
-        <div class="col-lg-5 col-xl-6 branding-section text-white d-none d-lg-flex">
-            <div class="brand-logo-icon shadow-sm">
-                <!-- Simple SVG Book/Store Icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
-                </svg>
+    <div class="container-fluid p-0">
+        <div class="row g-0 min-vh-100">
+
+            <!-- Left Column: Branding -->
+            <div class="col-lg-5 col-xl-6 branding-section text-white d-none d-lg-flex">
+                <div class="brand-logo-icon shadow-sm">
+                    <!-- Simple SVG Book/Store Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+                    </svg>
+                </div>
+                <h1 class="display-5 fw-bold mb-3 tracking-tight">TimsonBookshop POS</h1>
+                <p class="fs-5 text-white-50 fw-light" style="max-width: 480px;">
+                    A modern retail workspace. Manage your inventory, process transactions seamlessly, and grow your
+                    bookstore business.
+                </p>
             </div>
-            <h1 class="display-5 fw-bold mb-3 tracking-tight">TimsonBookshop POS</h1>
-            <p class="fs-5 text-white-50 fw-light" style="max-width: 480px;">
-                A modern retail workspace. Manage your inventory, process transactions seamlessly, and grow your bookstore business.
-            </p>
-        </div>
 
-        <!-- Right Column: Login Form -->
-        <div class="col-12 col-lg-7 col-xl-6 login-wrapper">
-            <div class="login-card">
-                
-                <!-- Mobile Only Header (Shows when left column is hidden) -->
-                <div class="d-lg-none text-center mb-5">
-                    <div class="brand-logo-icon bg-primary text-white mx-auto shadow-sm" style="background-color: var(--primary-color) !important;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
-                        </svg>
-                    </div>
-                    <h1 class="h3 fw-bold text-dark mb-1">TimsonBookshop POS</h1>
-                </div>
+            <!-- Right Column: Login Form -->
+            <div class="col-12 col-lg-7 col-xl-6 login-wrapper">
+                <div class="login-card">
 
-                <div class="login-card-header text-center text-lg-start">
-                    <h2>Welcome back</h2>
-                    <p>Enter your credentials to access your account.</p>
-                </div>
-
-                <form id="loginForm" novalidate>
-                    <div class="mb-4">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" placeholder="Enter your username (e.g. Miracle)" required>
-                        <div class="invalid-feedback">
-                            Please provide your username.
+                    <!-- Mobile Only Header (Shows when left column is hidden) -->
+                    <div class="d-lg-none text-center mb-5">
+                        <div class="brand-logo-icon bg-primary text-white mx-auto shadow-sm"
+                            style="background-color: var(--primary-color) !important;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+                            </svg>
                         </div>
+                        <h1 class="h3 fw-bold text-dark mb-1">TimsonBookshop POS</h1>
                     </div>
 
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label for="password" class="form-label mb-0">Password</label>
-                            <a href="../timson-pos-signup/index.html" class="forgot-link">Forgot password?</a>
-                        </div>
-                        <input type="password" class="form-control" id="password" placeholder="••••••••" required autocomplete="current-password">
-                        <div class="invalid-feedback">
-                            Password is required.
-                        </div>
+                    <div class="login-card-header text-center text-lg-start">
+                        <h2>Welcome back</h2>
+                        <p>Enter your credentials to access your account.</p>
                     </div>
 
-                    <div class="mb-4">
-                        <div class="form-check d-flex align-items-center">
-                            <input type="checkbox" class="form-check-input" id="rememberMe">
-                            <label class="form-check-label" for="rememberMe">
-                                Remember me for 30 days
-                            </label>
+                    <form id="loginForm" novalidate>
+                        <div class="mb-4">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username"
+                                placeholder="Enter your username (e.g. Miracle)" required>
+                            <div class="invalid-feedback">
+                                Please provide your username.
+                            </div>
                         </div>
+
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="password" class="form-label mb-0">Password</label>
+                                <a href="../timson-pos-signup/index.html" class="forgot-link">Forgot password?</a>
+                            </div>
+                            <input type="password" class="form-control" id="password" placeholder="••••••••" required
+                                autocomplete="current-password">
+                            <div class="invalid-feedback">
+                                Password is required.
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check d-flex align-items-center">
+                                <input type="checkbox" class="form-check-input" id="rememberMe">
+                                <label class="form-check-label" for="rememberMe">
+                                    Remember me for 30 days
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit"
+                            class="btn btn-primary w-100 d-flex justify-content-center align-items-center gap-2">
+                            <span id="btnText">Sign in to workspace</span>
+                            <div id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </button>
+
+                    </form>
+
+                    <div class="mt-5 text-center text-lg-start">
+                        <p class="text-secondary small mb-0">&copy; 2026 TimsonBookshop POS. All rights reserved.</p>
                     </div>
-
-                    <button type="submit" class="btn btn-primary w-100 d-flex justify-content-center align-items-center gap-2">
-                        <span id="btnText">Sign in to workspace</span>
-                        <div id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </button>
-                    
-                </form>
-
-                <div class="mt-5 text-center text-lg-start">
-                    <p class="text-secondary small mb-0">&copy; 2026 TimsonBookshop POS. All rights reserved.</p>
                 </div>
             </div>
-        </div>
 
+        </div>
     </div>
-</div>
 
-<!-- Bootstrap 5 JS Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script type="module"> 
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyACgmBzV74SwJLVyUCMdN1xOxZjMI4UgCg",
-        authDomain: "posapp-ed05a.firebaseapp.com",
-        databaseURL: "https://posapp-ed05a-default-rtdb.firebaseio.com",
-        projectId: "posapp-ed05a",
-        storageBucket: "posapp-ed05a.firebasestorage.app",
-        messagingSenderId: "486175914054",
-        appId: "1:486175914054:web:b2f7d71ae98c451f417247"
-    };
+        const firebaseConfig = {
+            apiKey: "AIzaSyACgmBzV74SwJLVyUCMdN1xOxZjMI4UgCg",
+            authDomain: "posapp-ed05a.firebaseapp.com",
+            databaseURL: "https://posapp-ed05a-default-rtdb.firebaseio.com",
+            projectId: "posapp-ed05a",
+            storageBucket: "posapp-ed05a.firebasestorage.app",
+            messagingSenderId: "486175914054",
+            appId: "1:486175914054:web:b2f7d71ae98c451f417247"
+        };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const form = document.getElementById('loginForm');
-        const btnText = document.getElementById('btnText');
-        const btnSpinner = document.getElementById('btnSpinner');
-        const submitBtn = form.querySelector('button[type="submit"]');
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('loginForm');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            const submitBtn = form.querySelector('button[type="submit"]');
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            if (!form.checkValidity()) {
-                e.stopPropagation();
-                form.classList.add('was-validated');
-                return;
-            }
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
 
-            submitBtn.disabled = true;
-            btnText.textContent = 'Authenticating...';
-            btnSpinner.classList.remove('d-none');
+                if (!form.checkValidity()) {
+                    e.stopPropagation();
+                    form.classList.add('was-validated');
+                    return;
+                }
 
-            try {
-                const usernameVal = form.username.value.trim().toLowerCase().replace(/\s+/g, '');
-                const authEmail = usernameVal.includes('@') ? usernameVal : (usernameVal + '@timson.local');
-                
-                const userCredential = await signInWithEmailAndPassword(auth, authEmail, form.password.value);
-                const user = userCredential.user;
-                
-                // Determine role-based redirection
-                const email = user.email ? user.email.toLowerCase() : '';
-                
-                // First attempt to get role from Realtime DB (usersRef/uid/role)
-                let userRole = null;
+                submitBtn.disabled = true;
+                btnText.textContent = 'Authenticating...';
+                btnSpinner.classList.remove('d-none');
+
                 try {
-                    const snap = await get(ref(db, `usersRef/${user.uid}`));
-                    if (snap.exists() && snap.val().role) {
-                        userRole = snap.val().role.toLowerCase();
+                    const usernameVal = form.username.value.trim().toLowerCase().replace(/\s+/g, '');
+                    const authEmail = usernameVal.includes('@') ? usernameVal : (usernameVal + '@timson.local');
+
+                    const userCredential = await signInWithEmailAndPassword(auth, authEmail, form.password.value);
+                    const user = userCredential.user;
+
+                    // Determine role-based redirection
+                    const email = user.email ? user.email.toLowerCase() : '';
+
+                    // First attempt to get role from Realtime DB (usersRef/uid/role)
+                    let userRole = null;
+                    try {
+                        const snap = await get(ref(db, `usersRef/${user.uid}`));
+                        if (snap.exists() && snap.val().role) {
+                            userRole = snap.val().role.toLowerCase();
+                        }
+                    } catch (dbErr) {
+                        console.warn("Could not fetch explicit role, falling back to email check", dbErr);
                     }
-                } catch(dbErr) {
-                    console.warn("Could not fetch explicit role, falling back to email check", dbErr);
-                }
 
-                // If no DB role, fallback to credential keywords
-                if (!userRole) {
-                    if (email.includes('admin')) userRole = 'admin';
-                    else if (email.includes('cashier')) userRole = 'cashier';
-                    else if (email.includes('seller')) userRole = 'seller';
-                    else userRole = 'admin'; // fallback default
-                }
+                    // If no DB role, fallback to credential keywords
+                    if (!userRole) {
+                        if (email.includes('admin')) userRole = 'admin';
+                        else if (email.includes('cashier')) userRole = 'cashier';
+                        else if (email.includes('seller')) userRole = 'seller';
+                        else userRole = 'admin'; // fallback default
+                    }
 
-                // Perform Redirect
-                btnText.textContent = 'Redirecting...';
-                if (userRole === 'seller') {
-                    window.location.href = '../cashier/seller.html';
-                } else if (userRole === 'cashier') {
-                    window.location.href = '../cashier/cashier.html';
-                } else {
-                    window.location.href = '../timson-pos-admin/admin-dashboard.html'; // Admin
-                }
+                    // Perform Redirect
+                    btnText.textContent = 'Redirecting...';
+                    if (userRole === 'seller') {
+                        window.location.href = '../cashier/seller.html';
+                    } else if (userRole === 'cashier') {
+                        window.location.href = '../cashier/cashier.html';
+                    } else {
+                        window.location.href = '../timson-pos-admin/admin-dashboard.html'; // Admin
+                    }
 
-            } catch (err) {
-                submitBtn.disabled = false;
-                btnText.textContent = 'Sign in to workspace';
-                btnSpinner.classList.add('d-none');
-                
-                const cardHeader = document.querySelector('.login-card-header');
-                const alertHtml = `<div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="fas fa-exclamation-circle me-2"></i>${err.message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
-                
-                const existingAlert = document.querySelector('.alert');
-                if (existingAlert) existingAlert.remove();
-                
-                cardHeader.insertAdjacentHTML('afterend', alertHtml);
-            }
+                } catch (err) {
+                    submitBtn.disabled = false;
+                    btnText.textContent = 'Sign in to workspace';
+                    btnSpinner.classList.add('d-none');
+
+                    const cardHeader = document.querySelector('.login-card-header');
+                    const alertHtml = `<div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="fas fa-exclamation-circle me-2"></i>${err.message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+
+                    const existingAlert = document.querySelector('.alert');
+                    if (existingAlert) existingAlert.remove();
+
+                    cardHeader.insertAdjacentHTML('afterend', alertHtml);
+                }
+            });
         });
-    });
-</script>
+    </script>
 </body>
+
 </html>

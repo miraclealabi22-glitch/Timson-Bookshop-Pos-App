@@ -91,12 +91,12 @@ function loadDataSubscriptions() {
         renderPendingOrders();
     });
 
-    // 2. Customers
     onValue(ref(db, 'customersRef'), snapshot => {
         const data = snapshot.val() || {};
         customers = Object.entries(data).map(([k, v]) => ({ id: k, ...v }));
         populateCustomerList();
         renderDebtorsReport();
+        populateCreditCustomersCheckout();
     });
 
     // 3. Transactions & Accounting (for reports)
@@ -247,17 +247,7 @@ window.openCheckoutModal = function () {
     document.getElementById('cashReceivedCheckout').value = "";
     document.getElementById('changeDueCheckout').value = "";
     document.getElementById('refNumberCheckout').value = "";
-
-    // Disable Credit if walkin
-    const crOpt = document.getElementById('optCreditAcc');
-    const crWarn = document.getElementById('creditWarnCheckout');
-    if (!selectedOrder.customerId) {
-        crOpt.disabled = true;
-        crWarn.classList.remove('d-none');
-    } else {
-        crOpt.disabled = false;
-        crWarn.classList.add('d-none');
-    }
+    document.getElementById('creditCustomerCheckoutSelect').value = "";
 
     toggleCheckoutFields();
     new bootstrap.Modal(document.getElementById('checkoutModal')).show();
@@ -267,10 +257,12 @@ window.toggleCheckoutFields = function () {
     const m = document.getElementById('paymentMethod').value;
     const cFields = document.getElementById('cashFieldsCheckout');
     const rFields = document.getElementById('refFieldsCheckout');
+    const crFields = document.getElementById('creditFieldsCheckout');
     const btn = document.getElementById('confirmCheckoutBtn');
 
     cFields.classList.add('d-none');
     rFields.classList.add('d-none');
+    crFields.classList.add('d-none');
     btn.disabled = true;
 
     if (m === 'Cash') {
@@ -281,7 +273,12 @@ window.toggleCheckoutFields = function () {
         document.getElementById('refLabelCheckout').innerText = m === 'POS' ? 'POS Slip Number' : 'Bank Reference Number';
         btn.disabled = false;
     } else if (m === 'Credit Account') {
-        if (selectedOrder.customerId) btn.disabled = false;
+        crFields.classList.remove('d-none');
+        const selCust = document.getElementById('creditCustomerCheckoutSelect');
+        if(selectedOrder.customerId && Array.from(selCust.options).some(o => o.value === selectedOrder.customerId)) {
+            selCust.value = selectedOrder.customerId;
+        }
+        validateCreditSale();
     }
 }
 
@@ -291,10 +288,14 @@ window.calculateChangeCheckout = function () {
     const btn = document.getElementById('confirmCheckoutBtn');
     const tot = Number(selectedOrder.totalDue);
 
-    if (rcvd >= tot) {
-        chgEl.value = `₦${(rcvd - tot).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+    if (rcvd === tot && tot > 0) {
+        chgEl.value = `Exact ₦${rcvd.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
         chgEl.className = "form-control form-control-lg bg-white text-success fw-bold";
         btn.disabled = false;
+    } else if (rcvd > tot) {
+        chgEl.value = `Overpaid ₦${(rcvd - tot).toLocaleString(undefined, { minimumFractionDigits: 2 })} - Exact Amount Required`;
+        chgEl.className = "form-control form-control-lg bg-white text-warning fw-bold";
+        btn.disabled = true;
     } else {
         chgEl.value = `Short ₦${(tot - rcvd).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
         chgEl.className = "form-control form-control-lg bg-white text-danger fw-bold";
@@ -311,13 +312,25 @@ window.finalizeCheckout = async function () {
     const cRcvd = Number(document.getElementById('cashReceivedCheckout').value) || 0;
     const refNum = document.getElementById('refNumberCheckout').value;
     const tot = Number(selectedOrder.totalDue);
+    
+    let finalCId = selectedOrder.customerId || null;
+    let finalCName = selectedOrder.customerName || 'Walk-in';
+    
+    if(method === 'Credit Account') {
+        const ccSel = document.getElementById('creditCustomerCheckoutSelect');
+        finalCId = ccSel.value;
+        const cObj = customers.find(c => c.id === finalCId);
+        if(cObj) {
+            finalCName = cObj.name;
+        }
+    }
 
     const txnPayload = {
         refNo: cashierRefId,
         sellerName: selectedOrder.sellerName, // Keep original seller credit
         cashierName: currentUser.name,        // Log who processed it
-        customerId: selectedOrder.customerId || null,
-        customerName: selectedOrder.customerName || 'Walk-in',
+        customerId: finalCId,
+        customerName: finalCName,
         items: selectedOrder.items,
         subtotal: selectedOrder.subtotal,
         discountPercent: selectedOrder.discountPercent,
@@ -347,8 +360,8 @@ window.finalizeCheckout = async function () {
         }
 
         // 3. Customer Credit logic
-        if (method === 'Credit Account' && selectedOrder.customerId) {
-            const custRef = `customersRef/${selectedOrder.customerId}`;
+        if (method === 'Credit Account' && finalCId) {
+            const custRef = `customersRef/${finalCId}`;
             const cSnap = await get(ref(db, custRef));
             if (cSnap.exists()) {
                 const bal = Number(cSnap.val().balanceOwed) || 0;
@@ -493,7 +506,8 @@ document.getElementById('dailyReportDate').addEventListener('change', renderDail
 
 function renderDailyReport() {
     const rContainer = document.getElementById('dailyReportContainer');
-    if (!rContainer) return;
+    const tbody = document.getElementById('dailyTransactionsTableBody');
+    if (!rContainer || !tbody) return;
 
     let targetDate = document.getElementById('dailyReportDate').value;
     if (!targetDate) {
@@ -502,9 +516,11 @@ function renderDailyReport() {
     }
 
     let tSales = 0, tExpenses = 0, tNypCol = 0, tBank = 0, tExcess = 0;
+    const dayTransactions = [];
 
     transactionsData.forEach(t => {
         if ((t.date || t.timestamp || '').split('T')[0] === targetDate) {
+            dayTransactions.push(t);
             if (t.paymentMethod === "NYP Debt Payment") tNypCol += (Number(t.totalAmount) || 0);
             else if (t.paymentMethod !== "Credit Account") tSales += (Number(t.totalAmount) || 0);
         }
@@ -572,6 +588,147 @@ function renderDailyReport() {
             </div>
         </div>
     `;
+
+    // Populate transactions table
+    tbody.innerHTML = '';
+    if (dayTransactions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No transactions for this date.</td></tr>';
+    } else {
+        dayTransactions.forEach(t => {
+            const time = new Date(t.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            tbody.innerHTML += `
+                <tr>
+                    <td><a href="#" class="text-primary fw-bold" onclick="showReceipt('${t.refNo}')">${t.refNo}</a></td>
+                    <td>${t.customerName || 'Walk-in'}</td>
+                    <td>${t.paymentMethod}</td>
+                    <td class="fw-bold">₦${Number(t.totalAmount).toLocaleString()}</td>
+                    <td>${time}</td>
+                </tr>
+            `;
+        });
+    }
+}
+
+window.showReceipt = function(refNo) {
+    const transaction = transactionsData.find(t => t.refNo === refNo);
+    if (!transaction) {
+        alert('Transaction not found!');
+        return;
+    }
+
+    const receiptContent = document.getElementById('receiptContent');
+    const date = new Date(transaction.date).toLocaleString();
+
+    let itemsHtml = '';
+    if (transaction.items && transaction.items.length > 0) {
+        itemsHtml = transaction.items.map(item => `
+            <tr>
+                <td>${item.name}</td>
+                <td class="text-center">${item.qty} ${item.unitType || 'unit'}</td>
+                <td class="text-end">₦${Number(item.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td class="text-end">₦${(item.qty * (item.price || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+            </tr>
+        `).join('');
+    }
+
+    receiptContent.innerHTML = `
+        <div class="text-center mb-4">
+            <h4 class="fw-bold">TimsonBookshop POS</h4>
+            <p class="mb-1">Transaction Receipt</p>
+            <p class="text-muted small">Ref: ${transaction.refNo}</p>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-6">
+                <strong>Date:</strong> ${date}
+            </div>
+            <div class="col-6 text-end">
+                <strong>Cashier:</strong> ${transaction.cashierName || 'N/A'}
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-6">
+                <strong>Customer:</strong> ${transaction.customerName || 'Walk-in'}
+            </div>
+            <div class="col-6 text-end">
+                <strong>Payment:</strong> ${transaction.paymentMethod}
+            </div>
+        </div>
+        
+        <table class="table table-sm table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Item</th>
+                    <th class="text-center">Qty</th>
+                    <th class="text-end">Rate (₦)</th>
+                    <th class="text-end">Total (₦)</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${itemsHtml}
+            </tbody>
+        </table>
+        
+        <div class="row mt-3">
+            <div class="col-6">
+                <strong>Subtotal:</strong> ₦${Number(transaction.subtotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </div>
+            <div class="col-6 text-end">
+                <strong>Discount:</strong> ${transaction.discountPercent || 0}%
+            </div>
+        </div>
+        
+        <hr>
+        <div class="text-end">
+            <h4 class="fw-bold mb-0">Total: ₦${Number(transaction.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h4>
+        </div>
+        
+        ${transaction.paymentMethod === 'Cash' && transaction.cashReceived ? `
+            <div class="text-end mt-2">
+                <strong>Cash Received:</strong> ₦${Number(transaction.cashReceived).toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
+                <strong>Change:</strong> ₦${Number(transaction.changeProvided || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </div>
+        ` : ''}
+        
+        ${transaction.referenceNumber ? `
+            <div class="text-end mt-2">
+                <strong>Ref Number:</strong> ${transaction.referenceNumber}
+            </div>
+        ` : ''}
+        
+        <div class="text-center mt-4 text-muted small">
+            Thank you for your business!
+        </div>
+    `;
+
+    new bootstrap.Modal(document.getElementById('receiptModal')).show();
+}
+
+window.printReceiptModal = function() {
+    const printContent = document.getElementById('receiptContent').innerHTML;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Receipt - ${new Date().toLocaleDateString()}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #f2f2f2; }
+                    .text-center { text-align: center; }
+                    .text-end { text-align: right; }
+                    .fw-bold { font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                ${printContent}
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
 }
 
 function renderDebtorsReport() {
@@ -608,6 +765,60 @@ function renderDebtorsReport() {
 }
 
 // --- Receipt Generation ---
+window.populateCreditCustomersCheckout = function() {
+    const sel = document.getElementById('creditCustomerCheckoutSelect');
+    if(!sel) return;
+    // Only customers with a credit limit mapped can do NYP
+    const eligible = customers.filter(c => Number(c.creditLimit) > 0);
+    sel.innerHTML = '<option value="" disabled selected>Choose active NYP customer...</option>';
+    eligible.forEach(c => {
+        sel.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+    });
+}
+
+window.validateCreditSale = function() {
+    const cId = document.getElementById('creditCustomerCheckoutSelect').value;
+    const btn = document.getElementById('confirmCheckoutBtn');
+    const details = document.getElementById('creditCustomerDetails');
+    const errMsg = document.getElementById('creditErrorMsg');
+    const sucMsg = document.getElementById('creditSuccessMsg');
+    
+    details.classList.add('d-none');
+    errMsg.classList.add('d-none');
+    sucMsg.classList.add('d-none');
+    btn.disabled = true;
+    
+    if(!cId) return;
+    
+    const cObj = customers.find(c => c.id === cId);
+    if(!cObj) return;
+    
+    const limit = Number(cObj.creditLimit) || 0;
+    const bal = Number(cObj.balanceOwed) || 0;
+    const avail = limit - bal;
+    const tot = Number(selectedOrder.totalDue) || 0;
+    
+    document.getElementById('ccName').innerText = cObj.name;
+    document.getElementById('ccPhone').innerText = cObj.phone || cObj.email || 'N/A';
+    document.getElementById('ccLimit').innerText = `₦${limit.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+    document.getElementById('ccBalance').innerText = `₦${bal.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+    
+    const availEl = document.getElementById('ccAvailable');
+    availEl.innerText = `₦${avail.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+    availEl.className = avail >= tot ? "fs-5 fw-bold text-success" : "fs-5 fw-bold text-danger";
+    
+    details.classList.remove('d-none');
+    
+    if(tot > avail) {
+        document.getElementById('creditErrorText').innerText = `Credit limit exceeded! Available credit is only ₦${avail.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+        errMsg.classList.remove('d-none');
+        btn.disabled = true;
+    } else {
+        sucMsg.classList.remove('d-none');
+        btn.disabled = false;
+    }
+}
+
 function printReceipt(txn) {
     const w = window.open('', '_blank', 'width=350,height=800');
     if (!w) return;

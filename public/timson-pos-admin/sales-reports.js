@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const d = new Date(now);
             d.setDate(d.getDate() - i);
             const row = document.createElement('tr');
-            row.innerHTML = `<td>${d.toLocaleDateString()}</td><td>$${(Math.random()*5000+1000).toFixed(2)}</td><td>${Math.floor(Math.random()*200+20)}</td>`;
+            row.innerHTML = `<td>${d.toLocaleDateString()}</td><td>₦${(Math.random()*5000+1000).toFixed(2)}</td><td>${Math.floor(Math.random()*200+20)}</td>`;
             tbody.appendChild(row);
         }
         tableContainer.innerHTML = '';

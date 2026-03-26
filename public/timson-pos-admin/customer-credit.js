@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
         purchaseAmountInput.addEventListener('input', function () {
             const added = parseFloat(this.value) || 0;
             const newBal = CURRENT_BALANCE + added;
-            simulatedPurchaseBalance.textContent = '$' + newBal.toFixed(2);
+            simulatedPurchaseBalance.textContent = '₦' + newBal.toFixed(2);
         });
 
         document.getElementById('confirmPurchaseBtn').addEventListener('click', function (e) {
@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", function () {
             alert("Credit Purchase successfully recorded! (Mocked)");
             bootstrap.Modal.getInstance(document.getElementById('recordPurchaseModal')).hide();
             form.reset();
-            simulatedPurchaseBalance.textContent = '$' + CURRENT_BALANCE.toFixed(2);
+            simulatedPurchaseBalance.textContent = '₦' + CURRENT_BALANCE.toFixed(2);
         });
     }
 
@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const newBal = CURRENT_BALANCE - paid;
             // Prevent negative logic display in this demo
             const displayBal = newBal >= 0 ? newBal : 0;
-            simulatedPaymentBalance.textContent = '$' + displayBal.toFixed(2);
+            simulatedPaymentBalance.textContent = '₦' + displayBal.toFixed(2);
         });
 
         document.getElementById('confirmPaymentBtn').addEventListener('click', function (e) {
@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", function () {
             alert("Payment successfully recorded! (Mocked)");
             bootstrap.Modal.getInstance(document.getElementById('recordPaymentModal')).hide();
             form.reset();
-            simulatedPaymentBalance.textContent = '$' + CURRENT_BALANCE.toFixed(2);
+            simulatedPaymentBalance.textContent = '₦' + CURRENT_BALANCE.toFixed(2);
         });
     }
 
@@ -82,9 +82,9 @@ window.generateReceipt = function (type, ref, amount, prevBal, newBal, dateStrin
     document.getElementById('rcptRef').textContent = ref;
     document.getElementById('rcptDate').textContent = dateString;
 
-    document.getElementById('rcptPrevBal').textContent = '$' + prevBal.toFixed(2);
-    document.getElementById('rcptAmount').textContent = '$' + amount.toFixed(2);
-    document.getElementById('rcptNewBal').textContent = '$' + newBal.toFixed(2);
+    document.getElementById('rcptPrevBal').textContent = '₦' + prevBal.toFixed(2);
+    document.getElementById('rcptAmount').textContent = '₦' + amount.toFixed(2);
+    document.getElementById('rcptNewBal').textContent = '₦' + newBal.toFixed(2);
 
     const actionText = document.getElementById('rcptActionText');
     const newBalEl = document.getElementById('rcptNewBal');

@@ -205,6 +205,25 @@
                     <div class="p-4" id="dailyReportContainer">
                         <!-- Stats filled by JS -->
                     </div>
+                    <div class="p-4 pt-0">
+                        <h6 class="fw-bold text-muted mb-3"><i class="fas fa-list me-2"></i> Transactions for Selected Date</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Ref Number</th>
+                                        <th>Customer</th>
+                                        <th>Payment Method</th>
+                                        <th>Amount (₦)</th>
+                                        <th>Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dailyTransactionsTableBody">
+                                    <tr><td colspan="5" class="text-center py-4 text-muted">No transactions for this date.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -255,9 +274,38 @@
                                 <option value="Cash">Cash</option>
                                 <option value="POS">POS</option>
                                 <option value="Bank Transfer">Bank Transfer</option>
-                                <option value="Credit Account" id="optCreditAcc">Leave on Credit (NYP)</option>
+                                <option value="Credit Account" id="optCreditAcc">Credit / NYP</option>
                             </select>
-                            <small id="creditWarnCheckout" class="text-danger d-none mt-1"><i class="fas fa-exclamation-triangle"></i> Cannot use Credit for unregistered "Walk-in" customer logs.</small>
+                        </div>
+
+                        <!-- Credit / NYP Fields -->
+                        <div id="creditFieldsCheckout" class="d-none mb-3 border border-primary rounded p-3 bg-white mt-2 shadow-sm">
+                            <label class="form-label fw-bold text-primary"><i class="fas fa-search me-1"></i> Select NYP Customer</label>
+                            <select id="creditCustomerCheckoutSelect" class="form-select form-select-lg shadow-sm border-primary mb-3" onchange="validateCreditSale()">
+                                <option value="" disabled selected>Choose active NYP customer...</option>
+                            </select>
+                            
+                            <div id="creditCustomerDetails" class="d-none bg-light p-3 rounded border border-light">
+                                <div class="row g-2 small">
+                                    <div class="col-6"><span class="text-muted">Name:</span> <br><strong id="ccName">---</strong></div>
+                                    <div class="col-6 text-end"><span class="text-muted">Phone:</span> <br><strong id="ccPhone">---</strong></div>
+                                    <div class="col-6 mt-3"><span class="text-muted">Credit Limit:</span> <br><strong id="ccLimit">₦0.00</strong></div>
+                                    <div class="col-6 mt-3 text-end"><span class="text-muted">Balance:</span> <br><strong id="ccBalance" class="text-danger">₦0.00</strong></div>
+                                    <div class="col-12 mt-3 pt-2 border-top">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="text-muted fw-bold">Available Credit:</span>
+                                            <span id="ccAvailable" class="fs-5 fw-bold text-success">₦0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="creditErrorMsg" class="alert alert-danger mt-3 d-none mb-0 small fw-bold shadow-sm">
+                                <i class="fas fa-exclamation-triangle me-1"></i> <span id="creditErrorText"></span>
+                            </div>
+                            <div id="creditSuccessMsg" class="alert alert-success mt-3 d-none mb-0 small fw-bold shadow-sm">
+                                <i class="fas fa-check-circle me-1"></i> Credit Sufficient. Request OK.
+                            </div>
                         </div>
 
                         <!-- Cash -->
@@ -337,6 +385,25 @@
                         </div>
                         <button type="submit" class="btn btn-info text-white w-100 py-2 fw-bold" id="btnProcessNyp">Process NYP Payment</button>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div class="modal fade" id="receiptModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-success text-white border-0">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-receipt me-2"></i> Transaction Receipt</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4" id="receiptContent">
+                    <!-- Receipt content will be populated here -->
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="printReceiptModal()"><i class="fas fa-print me-2"></i> Print Receipt</button>
                 </div>
             </div>
         </div>

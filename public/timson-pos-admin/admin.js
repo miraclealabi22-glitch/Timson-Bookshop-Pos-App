@@ -145,7 +145,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             cornerRadius: 8,
                             callbacks: {
                                 label: function (context) {
-                                    return '$' + context.parsed.y.toLocaleString();
+                                    return '₦' + context.parsed.y.toLocaleString();
                                 }
                             }
                         }
@@ -161,8 +161,8 @@ document.addEventListener("DOMContentLoaded", function () {
                             ticks: {
                                 padding: 10,
                                 callback: function (value) {
-                                    if (value >= 1000) return '$' + (value / 1000) + 'k';
-                                    return '$' + value;
+                                    if (value >= 1000) return '₦' + (value / 1000) + 'k';
+                                    return '₦' + value;
                                 }
                             }
                         },
