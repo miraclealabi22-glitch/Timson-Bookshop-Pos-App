@@ -23,6 +23,7 @@ let customers = [];
 let pendingOrders = [];
 let selectedOrder = null;
 let cashierRefId = "";
+let currentReceiptTxn = null; // Store for printing from modal
 
 // Report Data
 let transactionsData = [];
@@ -47,7 +48,14 @@ function startClock() {
 }
 
 function generateRefNo() {
-    cashierRefId = 'CASH-' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 1000);
+    let prefix = "CSH";
+    if(currentUser && currentUser.name) {
+        const cleanName = currentUser.name.replace(/[^a-zA-Z]/g, '');
+        prefix = (cleanName.length > 0 ? cleanName.padEnd(3, 'X') : "CSH").substring(0, 3).toUpperCase();
+    }
+    const randDigits = Math.floor(1000 + Math.random() * 9000);
+    cashierRefId = prefix + randDigits;
+    
     const dipRef = document.getElementById('displayRefNo');
     if (dipRef) dipRef.innerText = cashierRefId;
 }
@@ -67,8 +75,9 @@ function setupAuthListeners() {
         if (userNameDisplay) userNameDisplay.textContent = currentUser.name;
 
         const pic = document.getElementById('profilePics');
-        if (pic) pic.innerHTML = currentUser.name.charAt(0);
+        if (pic) pic.innerHTML = currentUser.name.charAt(0).toUpperCase();
 
+        generateRefNo(); // Update prefix once cashier loads
         loadDataSubscriptions();
     });
 
@@ -236,109 +245,99 @@ function renderSelectedOrderDetails() {
 }
 
 // --- Checkout Modal & Flow ---
-window.openCheckoutModal = function () {
-    if (!selectedOrder) return;
+function calculateSplitCheckout() {
+    const splitCash = document.getElementById('splitCash');
+    const splitPos = document.getElementById('splitPos');
+    const splitTransfer = document.getElementById('splitTransfer');
+    
+    if(!splitCash || !splitPos || !splitTransfer) return;
 
-    document.getElementById('checkoutTotalDue').innerText = `Amount Due: ₦${Number(selectedOrder.totalDue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+    const cash = Number(splitCash.value) || 0;
+    const pos = Number(splitPos.value) || 0;
+    const transfer = Number(splitTransfer.value) || 0;
+    const totDue = Number(selectedOrder ? selectedOrder.totalDue : 0) || 0;
+
+    const totalTendered = cash + pos + transfer;
+    const realChange = totalTendered > totDue ? (totalTendered - totDue) : 0;
+
+    document.getElementById('splitTotalTendered').innerText = `₦${totalTendered.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+    document.getElementById('splitChangeDue').innerText = `₦${realChange.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+
+    const btn = document.getElementById('confirmCheckoutBtn');
+
+    if(btn) btn.disabled = (totalTendered < totDue || totDue === 0); 
+}
+window.calculateSplitCheckout = calculateSplitCheckout;
+
+function openCheckoutModal() {
+    if (!selectedOrder) {
+        alert("Please select an order first.");
+        return;
+    }
+
+    const checkoutTotalDue = document.getElementById('checkoutTotalDue');
+    const splitTotalDueDisplay = document.getElementById('splitTotalDueDisplay');
+    
+    if(checkoutTotalDue) checkoutTotalDue.innerText = `Amount Due: ₦${Number(selectedOrder.totalDue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+    if(splitTotalDueDisplay) splitTotalDueDisplay.innerText = `₦${Number(selectedOrder.totalDue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
     // Reset inputs
-    const pMethod = document.getElementById('paymentMethod');
-    pMethod.value = "";
-    document.getElementById('cashReceivedCheckout').value = "";
-    document.getElementById('changeDueCheckout').value = "";
-    document.getElementById('refNumberCheckout').value = "";
-    document.getElementById('creditCustomerCheckoutSelect').value = "";
+    ["splitCash", "splitPos", "splitTransfer"].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.value = "";
+    });
 
-    toggleCheckoutFields();
-    new bootstrap.Modal(document.getElementById('checkoutModal')).show();
-}
-
-window.toggleCheckoutFields = function () {
-    const m = document.getElementById('paymentMethod').value;
-    const cFields = document.getElementById('cashFieldsCheckout');
-    const rFields = document.getElementById('refFieldsCheckout');
-    const crFields = document.getElementById('creditFieldsCheckout');
-    const btn = document.getElementById('confirmCheckoutBtn');
-
-    cFields.classList.add('d-none');
-    rFields.classList.add('d-none');
-    crFields.classList.add('d-none');
-    btn.disabled = true;
-
-    if (m === 'Cash') {
-        cFields.classList.remove('d-none');
-        calculateChangeCheckout(); // re-eval button
-    } else if (m === 'POS' || m === 'Bank Transfer') {
-        rFields.classList.remove('d-none');
-        document.getElementById('refLabelCheckout').innerText = m === 'POS' ? 'POS Slip Number' : 'Bank Reference Number';
-        btn.disabled = false;
-    } else if (m === 'Credit Account') {
-        crFields.classList.remove('d-none');
-        const selCust = document.getElementById('creditCustomerCheckoutSelect');
-        if(selectedOrder.customerId && Array.from(selCust.options).some(o => o.value === selectedOrder.customerId)) {
-            selCust.value = selectedOrder.customerId;
-        }
-        validateCreditSale();
+    calculateSplitCheckout();
+    
+    const modalEl = document.getElementById('checkoutModal');
+    if(modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
     }
 }
+window.openCheckoutModal = openCheckoutModal;
 
-window.calculateChangeCheckout = function () {
-    const rcvd = Number(document.getElementById('cashReceivedCheckout').value) || 0;
-    const chgEl = document.getElementById('changeDueCheckout');
+
+
+async function finalizeCheckout() {
     const btn = document.getElementById('confirmCheckoutBtn');
-    const tot = Number(selectedOrder.totalDue);
-
-    if (rcvd === tot && tot > 0) {
-        chgEl.value = `Exact ₦${rcvd.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-        chgEl.className = "form-control form-control-lg bg-white text-success fw-bold";
-        btn.disabled = false;
-    } else if (rcvd > tot) {
-        chgEl.value = `Overpaid ₦${(rcvd - tot).toLocaleString(undefined, { minimumFractionDigits: 2 })} - Exact Amount Required`;
-        chgEl.className = "form-control form-control-lg bg-white text-warning fw-bold";
-        btn.disabled = true;
-    } else {
-        chgEl.value = `Short ₦${(tot - rcvd).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-        chgEl.className = "form-control form-control-lg bg-white text-danger fw-bold";
-        btn.disabled = true;
-    }
-}
-
-window.finalizeCheckout = async function () {
-    const btn = document.getElementById('confirmCheckoutBtn');
+    if(!btn) return;
+    
     btn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i>Processing...`;
     btn.disabled = true;
 
-    const method = document.getElementById('paymentMethod').value;
-    const cRcvd = Number(document.getElementById('cashReceivedCheckout').value) || 0;
-    const refNum = document.getElementById('refNumberCheckout').value;
-    const tot = Number(selectedOrder.totalDue);
+    const cashInput = document.getElementById('splitCash');
+    const posInput = document.getElementById('splitPos');
+    const transferInput = document.getElementById('splitTransfer');
+
+    const cash = Number(cashInput ? cashInput.value : 0) || 0;
+    const pos = Number(posInput ? posInput.value : 0) || 0;
+    const transfer = Number(transferInput ? transferInput.value : 0) || 0;
     
+    const tot = Number(selectedOrder.totalDue);
+    const totalTendered = cash + pos + transfer;
+    const change = Math.max(0, totalTendered - tot);
+
     let finalCId = selectedOrder.customerId || null;
     let finalCName = selectedOrder.customerName || 'Walk-in';
-    
-    if(method === 'Credit Account') {
-        const ccSel = document.getElementById('creditCustomerCheckoutSelect');
-        finalCId = ccSel.value;
-        const cObj = customers.find(c => c.id === finalCId);
-        if(cObj) {
-            finalCName = cObj.name;
-        }
-    }
 
     const txnPayload = {
         refNo: cashierRefId,
-        sellerName: selectedOrder.sellerName, // Keep original seller credit
-        cashierName: currentUser.name,        // Log who processed it
+        sellerName: selectedOrder.sellerName,
+        cashierName: currentUser.name,
         customerId: finalCId,
         customerName: finalCName,
         items: selectedOrder.items,
         subtotal: selectedOrder.subtotal,
         discountPercent: selectedOrder.discountPercent,
         totalAmount: tot,
-        paymentMethod: method,
-        cashReceived: method === 'Cash' ? cRcvd : null,
-        changeProvided: method === 'Cash' ? Math.max(0, cRcvd - tot) : 0,
-        referenceNumber: (method === 'Bank Transfer' || method === 'POS') ? refNum : null,
+        paymentMethod: "Split/Multi-Mode",
+        splitPayments: {
+            cash: cash,
+            pos: pos,
+            transfer: transfer
+        },
+        changeProvided: change,
         date: new Date().toISOString()
     };
 
@@ -346,40 +345,49 @@ window.finalizeCheckout = async function () {
         // 1. Save definitive Transaction
         await push(ref(db, 'transactionsRef'), txnPayload);
 
-        // 2. Reduce Stock (Assuming Seller didn't reduce immediately for pending)
+        // 2. Reduce Stock
         for (let item of selectedOrder.items || []) {
-            const stockRefStr = `stockRef/${item.id}`; // seller logic maps product id to item.id
+            const stockRefStr = `stockRef/${item.id}`; 
             const sSnap = await get(ref(db, stockRefStr));
             if (sSnap.exists()) {
-                const currentStock = Number(sSnap.val().StockQuantity) || 0;
-                // Since this might not have standard equivalent units built internally yet, default to direct qty deduction based on base units
-                await update(ref(db, stockRefStr), {
-                    StockQuantity: Math.max(0, currentStock - item.qty)
-                });
-            }
-        }
-
-        // 3. Customer Credit logic
-        if (method === 'Credit Account' && finalCId) {
-            const custRef = `customersRef/${finalCId}`;
-            const cSnap = await get(ref(db, custRef));
-            if (cSnap.exists()) {
-                const bal = Number(cSnap.val().balanceOwed) || 0;
-                await update(ref(db, custRef), { balanceOwed: bal + tot });
-                await push(ref(db, `${custRef}/transactions`), {
-                    date: txnPayload.date,
-                    type: "Purchase",
-                    amount: tot,
-                    ref: cashierRefId
-                });
+                const pData = sSnap.val();
+                let actualQty = item.qty;
+                if(item.unitType === 'carton') actualQty = item.qty * (Number(pData.cartonSize) || 1);
+                else if(item.unitType === 'dozen') actualQty = item.qty * 12;
+                else if(item.unitType === 'half') actualQty = item.qty * 6;
+                else if(item.unitType === 'quarter') actualQty = item.qty * 3;
+                
+                const cartonSize = Number(pData.cartonSize) || 0;
+                let currentTotalUnits = Number(pData.StockQuantity) || 0;
+                
+                if (cartonSize === 0) {
+                    const newTotal = Math.max(0, currentTotalUnits - actualQty);
+                    await update(ref(db, stockRefStr), { 
+                        StockQuantity: newTotal,
+                        unitQuantity: newTotal
+                    });
+                } else {
+                    const newTotalUnits = Math.max(0, currentTotalUnits - actualQty);
+                    const newCartonQty = Math.floor(newTotalUnits / cartonSize);
+                    const newUnitQty = newTotalUnits % cartonSize;
+                    
+                    await update(ref(db, stockRefStr), { 
+                        StockQuantity: newTotalUnits,
+                        cartonQuantity: newCartonQty,
+                        unitQuantity: newUnitQty
+                    });
+                }
             }
         }
 
         // 4. Remove from Pending limit
         await remove(ref(db, `pendingOrdersRef/${selectedOrder.id}`));
 
-        bootstrap.Modal.getInstance(document.getElementById('checkoutModal')).hide();
-        printReceipt(txnPayload);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('checkoutModal')).hide();
+        
+        // IMPORTANT: Capture the current ref BEFORE generateRefNo() changes it!
+        const finalReceiptRef = cashierRefId;
+        setTimeout(() => window.showReceipt(finalReceiptRef), 1000);
 
         // Reset 
         clearSelectedOrder();
@@ -393,8 +401,7 @@ window.finalizeCheckout = async function () {
         btn.disabled = false;
     }
 }
-
-// ... Rest of the modals (NYP, Daily Report, etc. remains the same)
+window.finalizeCheckout = finalizeCheckout;
 // --- NYP Payment (Credit Payment Collection) ---
 window.openNypPaymentModal = function () {
     document.getElementById('nypCustomer').value = "";
@@ -411,7 +418,7 @@ window.nypCustomerChanged = function () {
     }
 }
 
-document.getElementById('nypForm').addEventListener('submit', async (e) => {
+document.getElementById('nypForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btnProcessNyp');
     btn.innerHTML = "Processing...";
@@ -445,7 +452,7 @@ document.getElementById('nypForm').addEventListener('submit', async (e) => {
             });
 
             alert("NYP Payment processed successfully!");
-            bootstrap.Modal.getInstance(document.getElementById('nypModal')).hide();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('nypModal')).hide();
         }
     } catch (err) {
         console.error(err);
@@ -474,7 +481,7 @@ window.openAccountingModal = function (type) {
     new bootstrap.Modal(document.getElementById('accountingModal')).show();
 }
 
-document.getElementById('accForm').addEventListener('submit', async (e) => {
+document.getElementById('accForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const type = document.getElementById('accType').value;
     const amt = Number(document.getElementById('accAmount').value) || 0;
@@ -494,7 +501,7 @@ document.getElementById('accForm').addEventListener('submit', async (e) => {
             type: type
         });
         alert("Entry successfully recorded!");
-        bootstrap.Modal.getInstance(document.getElementById('accountingModal')).hide();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('accountingModal')).hide();
     } catch (err) {
         console.error(err);
         alert("Failed to record entry.");
@@ -502,12 +509,13 @@ document.getElementById('accForm').addEventListener('submit', async (e) => {
 });
 
 // --- Reports ---
-document.getElementById('dailyReportDate').addEventListener('change', renderDailyReport);
+document.getElementById('dailyReportDate')?.addEventListener('change', renderDailyReport);
 
 function renderDailyReport() {
     const rContainer = document.getElementById('dailyReportContainer');
     const tbody = document.getElementById('dailyTransactionsTableBody');
-    if (!rContainer || !tbody) return;
+    const tfooter = document.getElementById('dailyReportFooter');
+    if (!rContainer || !tbody || !tfooter) return;
 
     let targetDate = document.getElementById('dailyReportDate').value;
     if (!targetDate) {
@@ -516,13 +524,35 @@ function renderDailyReport() {
     }
 
     let tSales = 0, tExpenses = 0, tNypCol = 0, tBank = 0, tExcess = 0;
+    // Ground Totals breakdown
+    let gtCash = 0, gtPos = 0, gtTransfer = 0, gtCredit = 0, gtTotal = 0;
+
     const dayTransactions = [];
 
     transactionsData.forEach(t => {
         if ((t.date || t.timestamp || '').split('T')[0] === targetDate) {
             dayTransactions.push(t);
-            if (t.paymentMethod === "NYP Debt Payment") tNypCol += (Number(t.totalAmount) || 0);
-            else if (t.paymentMethod !== "Credit Account") tSales += (Number(t.totalAmount) || 0);
+            
+            if (t.paymentMethod === "NYP Debt Payment") {
+                tNypCol += (Number(t.totalAmount) || 0);
+                gtCash += (Number(t.totalAmount) || 0); // Assuming debt collection is mostly cash for this logic
+            } else {
+                if (t.splitPayments) {
+                    gtCash += (Number(t.splitPayments.cash) || 0);
+                    gtPos += (Number(t.splitPayments.pos) || 0);
+                    gtTransfer += (Number(t.splitPayments.transfer) || 0);
+                    gtCredit += (Number(t.splitPayments.credit) || 0);
+                    // Deduct change from cash if any
+                    gtCash -= (Number(t.changeProvided) || 0);
+                } else {
+                    // Legacy single-mode
+                    if (t.paymentMethod === 'Cash') gtCash += (Number(t.totalAmount) || 0);
+                    else if (t.paymentMethod === 'POS') gtPos += (Number(t.totalAmount) || 0);
+                    else if (t.paymentMethod === 'Bank Transfer') gtTransfer += (Number(t.totalAmount) || 0);
+                    else if (t.paymentMethod === 'Credit Account') gtCredit += (Number(t.totalAmount) || 0);
+                }
+                gtTotal += (Number(t.totalAmount) || 0);
+            }
         }
     });
 
@@ -534,36 +564,39 @@ function renderDailyReport() {
         }
     });
 
-    const finalBal = (tSales + tNypCol + tExcess) - (tExpenses + tBank);
+    // Total Payment Amount = Cash + POS + Transfer
+    const totalPaymentAmt = gtCash + gtPos + gtTransfer + tNypCol;
+    const cashAvailable = (gtCash + tNypCol + tExcess) - (tExpenses + tBank);
+    const totalSalesBalance = gtTotal;
 
     rContainer.innerHTML = `
         <div class="row g-4">
             <div class="col-md-4">
-                <div class="card shadow-sm border-0 border-start border-primary border-4">
+                <div class="card shadow-sm border-0 border-start border-primary border-4 rounded-3">
                     <div class="card-body">
-                        <h6 class="text-muted fw-bold">Total Sales Paid</h6>
-                        <h3 class="fw-bold mb-0">₦${tSales.toLocaleString()}</h3>
+                        <h6 class="text-muted fw-bold">Daily Revenue</h6>
+                        <h3 class="fw-bold mb-0">₦${gtTotal.toLocaleString()}</h3>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card shadow-sm border-0 border-start border-info border-4">
+                <div class="card shadow-sm border-0 border-start border-info border-4 rounded-3">
                     <div class="card-body">
-                        <h6 class="text-muted fw-bold">Credit (NYP) Collected</h6>
+                        <h6 class="text-muted fw-bold">NYP Collected</h6>
                         <h3 class="fw-bold mb-0">₦${tNypCol.toLocaleString()}</h3>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card shadow-sm border-0 border-start border-success border-4">
+                <div class="card shadow-sm border-0 border-start border-success border-4 rounded-3">
                     <div class="card-body">
-                        <h6 class="text-muted fw-bold">Excess Cash In</h6>
+                        <h6 class="text-muted fw-bold">Excess Cash</h6>
                         <h3 class="fw-bold mb-0">₦${tExcess.toLocaleString()}</h3>
                     </div>
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card shadow-sm border-0 border-start border-danger border-4">
+                <div class="card shadow-sm border-0 border-start border-danger border-4 rounded-3">
                     <div class="card-body">
                         <h6 class="text-muted fw-bold">Expenses</h6>
                         <h3 class="fw-bold mb-0 text-danger">-₦${tExpenses.toLocaleString()}</h3>
@@ -571,41 +604,69 @@ function renderDailyReport() {
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card shadow-sm border-0 border-start border-secondary border-4">
+                <div class="card shadow-sm border-0 border-start border-secondary border-4 rounded-3">
                     <div class="card-body">
                         <h6 class="text-muted fw-bold">Bank Lodgement</h6>
                         <h3 class="fw-bold mb-0 text-danger">-₦${tBank.toLocaleString()}</h3>
                     </div>
                 </div>
             </div>
-            <div class="col-12 mt-4">
-                <div class="card shadow border-0 bg-primary text-white">
-                    <div class="card-body d-flex justify-content-between align-items-center">
-                        <h4 class="fw-bold mb-0">Final Till Balance</h4>
-                        <h2 class="fw-bold mb-0">₦${finalBal.toLocaleString()}</h2>
-                    </div>
-                </div>
-            </div>
         </div>
     `;
+
+    // Final Summary Cards at the bottom of the table
+    document.getElementById('totalPaymentAmount').innerText = `₦${totalPaymentAmt.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+    document.getElementById('totalSalesBalance').innerText = `₦${totalSalesBalance.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+    document.getElementById('totalCashAvailable').innerText = `₦${cashAvailable.toLocaleString(undefined, {minimumFractionDigits:2})}`;
 
     // Populate transactions table
     tbody.innerHTML = '';
     if (dayTransactions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No transactions for this date.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No transactions for this date.</td></tr>';
+        tfooter.innerHTML = '';
     } else {
         dayTransactions.forEach(t => {
             const time = new Date(t.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            let c = 0, p = 0, tr = 0, cr = 0;
+            if(t.splitPayments) {
+                c = t.splitPayments.cash - (t.changeProvided || 0);
+                p = t.splitPayments.pos;
+                tr = t.splitPayments.transfer;
+                cr = t.splitPayments.credit;
+            } else {
+                if(t.paymentMethod === 'Cash') c = t.totalAmount;
+                else if(t.paymentMethod === 'POS') p = t.totalAmount;
+                else if(t.paymentMethod === 'Bank Transfer') tr = t.totalAmount;
+                else if(t.paymentMethod === 'Credit Account') cr = t.totalAmount;
+                else if(t.paymentMethod === 'NYP Debt Payment') c = t.totalAmount;
+            }
+
             tbody.innerHTML += `
                 <tr>
                     <td><a href="#" class="text-primary fw-bold" onclick="showReceipt('${t.refNo}')">${t.refNo}</a></td>
                     <td>${t.customerName || 'Walk-in'}</td>
-                    <td>${t.paymentMethod}</td>
-                    <td class="fw-bold">₦${Number(t.totalAmount).toLocaleString()}</td>
-                    <td>${time}</td>
+                    <td class="text-end">₦${c.toLocaleString()}</td>
+                    <td class="text-end">₦${p.toLocaleString()}</td>
+                    <td class="text-end">₦${tr.toLocaleString()}</td>
+                    <td class="text-end">₦${cr.toLocaleString()}</td>
+                    <td class="text-end fw-bold">₦${Number(t.totalAmount).toLocaleString()}</td>
+                    <td><small>${time}</small></td>
                 </tr>
             `;
         });
+
+        // Inject Ground Totals into Footer
+        tfooter.innerHTML = `
+            <tr class="table-secondary">
+                <td colspan="2" class="text-center">GROUND TOTAL:</td>
+                <td class="text-end">₦${gtCash.toLocaleString()}</td>
+                <td class="text-end">₦${gtPos.toLocaleString()}</td>
+                <td class="text-end">₦${gtTransfer.toLocaleString()}</td>
+                <td class="text-end">₦${gtCredit.toLocaleString()}</td>
+                <td class="text-end">₦${gtTotal.toLocaleString()}</td>
+                <td></td>
+            </tr>
+        `;
     }
 }
 
@@ -615,6 +676,7 @@ window.showReceipt = function(refNo) {
         alert('Transaction not found!');
         return;
     }
+    currentReceiptTxn = transaction;
 
     const receiptContent = document.getElementById('receiptContent');
     const date = new Date(transaction.date).toLocaleString();
@@ -632,73 +694,89 @@ window.showReceipt = function(refNo) {
     }
 
     receiptContent.innerHTML = `
-        <div class="text-center mb-4">
-            <h4 class="fw-bold">TimsonBookshop POS</h4>
-            <p class="mb-1">Transaction Receipt</p>
-            <p class="text-muted small">Ref: ${transaction.refNo}</p>
-        </div>
-        
-        <div class="row mb-3">
-            <div class="col-6">
-                <strong>Date:</strong> ${date}
+        <div class="receipt-paper mx-auto">
+            <div class="text-center mb-4">
+                <div class="receipt-header-title mb-1">TIMSON BOOKSHOP</div>
+                <div class="small fw-semibold text-muted" style="font-size: 0.75rem; letter-spacing: 1px;">AND STATIONERY STORES</div>
+                <div class="mt-3 small" style="line-height: 1.4; font-size: 0.75rem; color: #555;">
+                    Timson Building, Opposite Takie Roundabout,<br>
+                    Ogbomoso, Oyo State. Nigeria<br>
+                    <strong>PH:</strong> 08034155216, 08030470763
+                </div>
             </div>
-            <div class="col-6 text-end">
-                <strong>Cashier:</strong> ${transaction.cashierName || 'N/A'}
+
+            <div class="premium-separator"></div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <div class="receipt-label">Ref Number</div>
+                    <div class="receipt-value">#${transaction.refNo}</div>
+                </div>
+                <div class="col-6 text-end">
+                    <div class="receipt-label">Date</div>
+                    <div class="receipt-value">${date.split(',')[0]}</div>
+                </div>
+                <div class="col-6">
+                    <div class="receipt-label">Cashier</div>
+                    <div class="receipt-value">${transaction.cashierName || 'Staff'}</div>
+                </div>
+                <div class="col-6 text-end">
+                    <div class="receipt-label">Customer</div>
+                    <div class="receipt-value">${transaction.customerName || 'Walk-in'}</div>
+                </div>
             </div>
-        </div>
-        
-        <div class="row mb-3">
-            <div class="col-6">
-                <strong>Customer:</strong> ${transaction.customerName || 'Walk-in'}
+
+            <table class="table receipt-table mt-4 mb-2">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th class="text-center">Qty</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${transaction.items.map(item => `
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark">${item.name}</div>
+                                <div class="receipt-label" style="font-size: 0.6rem;">@ ₦${Number(item.price).toLocaleString()}</div>
+                            </td>
+                            <td class="text-center fw-semibold">${item.qty} ${item.unitType || 'PCS'}</td>
+                            <td class="text-end fw-bold">₦${(item.qty * (item.price || 0)).toLocaleString()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+
+            <div class="receipt-total-banner text-center">
+                <div class="receipt-label mb-1">Total Amount Due</div>
+                <div class="h3 fw-bold mb-0" style="color: #1a1a1a; font-weight: 800;">₦${Number(transaction.totalAmount).toLocaleString()}</div>
             </div>
-            <div class="col-6 text-end">
-                <strong>Payment:</strong> ${transaction.paymentMethod}
+
+            <div class="px-2 mb-4" style="font-size: 0.75rem; color: #666;">
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Payment Mode:</span>
+                    <span class="fw-bold text-dark">${Object.entries(transaction.splitPayments || {}).filter(([_,v]) => v > 0).map(([k]) => k.toUpperCase()).join(', ')}</span>
+                </div>
+                ${transaction.changeProvided > 0 ? `
+                    <div class="d-flex justify-content-between text-danger fw-bold">
+                        <span>Change:</span>
+                        <span>₦${Number(transaction.changeProvided).toLocaleString()}</span>
+                    </div>
+                ` : ''}
             </div>
-        </div>
-        
-        <table class="table table-sm table-bordered">
-            <thead class="table-light">
-                <tr>
-                    <th>Item</th>
-                    <th class="text-center">Qty</th>
-                    <th class="text-end">Rate (₦)</th>
-                    <th class="text-end">Total (₦)</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${itemsHtml}
-            </tbody>
-        </table>
-        
-        <div class="row mt-3">
-            <div class="col-6">
-                <strong>Subtotal:</strong> ₦${Number(transaction.subtotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+
+            <div class="text-center mt-4">
+                <div class="small fw-bold text-dark mb-1">THANK YOU FOR YOUR PATRONAGE</div>
+                <div class="receipt-label italic" style="font-style: italic; text-transform: none;">
+                    Oja Ti Eralo Ni Daada Ekogbodo Gbepada Wa.
+                </div>
             </div>
-            <div class="col-6 text-end">
-                <strong>Discount:</strong> ${transaction.discountPercent || 0}%
+
+            <div class="mt-5 text-center">
+                <div class="receipt-footer-brand">POWERED BY BATH TECHNOLOGIES</div>
+                <div style="font-size: 0.55rem; color: #bbb;">+234-803-419-2786 • © 2024</div>
             </div>
-        </div>
-        
-        <hr>
-        <div class="text-end">
-            <h4 class="fw-bold mb-0">Total: ₦${Number(transaction.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h4>
-        </div>
-        
-        ${transaction.paymentMethod === 'Cash' && transaction.cashReceived ? `
-            <div class="text-end mt-2">
-                <strong>Cash Received:</strong> ₦${Number(transaction.cashReceived).toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
-                <strong>Change:</strong> ₦${Number(transaction.changeProvided || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            </div>
-        ` : ''}
-        
-        ${transaction.referenceNumber ? `
-            <div class="text-end mt-2">
-                <strong>Ref Number:</strong> ${transaction.referenceNumber}
-            </div>
-        ` : ''}
-        
-        <div class="text-center mt-4 text-muted small">
-            Thank you for your business!
         </div>
     `;
 
@@ -711,24 +789,48 @@ window.printReceiptModal = function() {
     printWindow.document.write(`
         <html>
             <head>
-                <title>Receipt - ${new Date().toLocaleDateString()}</title>
+                <title>Receipt</title>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
                 <style>
-                    body { font-family: Arial, sans-serif; margin: 20px; }
-                    table { width: 100%; border-collapse: collapse; }
-                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                    th { background-color: #f2f2f2; }
+                    body { font-family: 'Inter', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; }
+                    .receipt-paper { background: #fff; padding: 20px; position: relative; width: 100%; max-width: 400px; margin: 0 auto; }
+                    .receipt-header-title { font-weight: 800; letter-spacing: -0.5px; color: #1a1a1a; font-size: 1.25rem; }
+                    .receipt-label { font-size: 0.65rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+                    .receipt-value { font-size: 0.85rem; font-weight: 600; color: #1a1a1a; }
+                    .premium-separator { border-top: 1px dashed #ccc; margin: 15px 0; }
+                    .receipt-table th { font-size: 0.7rem; font-weight: 700; color: #666; text-transform: uppercase; padding: 10px 5px !important; border: none !important; border-bottom: 1px solid #eee !important; }
+                    .receipt-table td { font-size: 0.8rem; padding: 12px 5px !important; border: none !important; color: #333; }
+                    .receipt-total-banner { background: #f8f9fa; border-radius: 8px; padding: 15px; margin: 20px 0; border: 1px solid #eee; }
+                    .receipt-footer-brand { font-size: 0.6rem; letter-spacing: 1px; color: #999; text-transform: uppercase; }
                     .text-center { text-align: center; }
                     .text-end { text-align: right; }
                     .fw-bold { font-weight: bold; }
+                    .fw-800 { font-weight: 800; }
+                    .g-2 { margin-right: -4px; margin-left: -4px; }
+                    .g-2 > * { padding-right: 4px; padding-left: 4px; }
+                    .row { display: flex; flex-wrap: wrap; }
+                    .col-6 { width: 50%; }
+                    @media print {
+                        body { padding: 0; }
+                        .receipt-paper { width: 100%; max-width: 100%; border: none; }
+                    }
                 </style>
             </head>
             <body>
                 ${printContent}
+                <script>
+                    window.onload = function() { 
+                        setTimeout(() => {
+                            window.print(); 
+                            window.close(); 
+                        }, 500);
+                    }
+                </script>
             </body>
         </html>
     `);
     printWindow.document.close();
-    printWindow.print();
 }
 
 function renderDebtorsReport() {
@@ -820,20 +922,19 @@ window.validateCreditSale = function() {
 }
 
 function printReceipt(txn) {
-    const w = window.open('', '_blank', 'width=350,height=800');
+    const w = window.open('', '_blank', 'width=450,height=800');
     if (!w) return;
 
+    const dateStr = new Date(txn.date).toLocaleDateString();
+    
     let itemsHtml = '';
-
-    (txn.items || []).forEach(i => {
+    (txn.items || []).forEach(item => {
         itemsHtml += `
-            <tr class="item-row">
-                <td colspan="4" style="text-align: left; padding-top: 5px;"><strong>${i.name} (${i.unitType || 'unit'})</strong></td>
-            </tr>
-            <tr class="item-row">
-                <td>${i.qty}</td>
-                <td style="text-align: right;">₦${Number(i.price || i.unitPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                <td style="text-align: right;"><strong>₦${((Number(i.price || i.unitPrice || 0)) * (Number(i.qty || 0))).toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong></td>
+            <tr style="border-bottom: 1px solid #000;">
+                <td style="padding: 5px; border-right: 1px solid #000;">${item.name}</td>
+                <td style="padding: 5px; text-align: center; border-right: 1px solid #000;">${item.qty}<br><small>${item.unitType || 'PCS'}</small></td>
+                <td style="padding: 5px; text-align: right; border-right: 1px solid #000;">${Number(item.price || 0).toLocaleString()}</td>
+                <td style="padding: 5px; text-align: right;">${(item.qty * (item.price || 0)).toLocaleString()}</td>
             </tr>
         `;
     });
@@ -844,77 +945,100 @@ function printReceipt(txn) {
         <head>
             <title>Receipt - TimsonBookshop</title>
             <style>
-                body { font-family: 'Courier New', Courier, monospace; margin: 0; padding: 20px 10px; color: #000; font-size: 13px; }
-                .receipt-container { width: 100%; max-width: 300px; margin: 0 auto; text-align: center; }
-                .header h2 { margin: 0 0 5px 0; font-size: 20px; font-weight: bold; }
-                .header p { margin: 0; font-size: 12px; line-height: 1.4; }
-                .meta { text-align: left; font-size: 11px; margin-top: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-                .meta-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-                th { text-align: right; padding-bottom: 5px; border-bottom: 1px solid #000; font-weight: bold; }
-                th:first-child { text-align: left; }
-                .item-row td { padding: 3px 0; vertical-align: top; }
-                .totals { margin-top: 10px; border-top: 1px dashed #000; padding-top: 10px; text-align: left; font-size: 12px; }
-                .totals-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
-                .grand-total { font-weight: bold; font-size: 15px; margin-top: 8px; border-top: 1px solid #000; padding-top: 8px; }
-                .divider { border-top: 1px dashed #000; margin: 15px 0; }
-                .footer { text-align: center; font-size: 11px; margin-top: 20px; }
+                body { font-family: 'Courier New', Courier, monospace; margin: 0; padding: 10px; color: #000; font-size: 12px; }
+                .receipt-container { width: 100%; max-width: 350px; margin: 0 auto; }
+                .text-center { text-align: center; }
+                .text-end { text-align: right; }
+                .fw-bold { font-weight: bold; }
+                .text-danger { color: #d9534f !important; }
+                .border-bottom { border-bottom: 1px solid #000; }
+                .border-dark { border: 1px solid #000; }
+                .mb-1 { margin-bottom: 4px; }
+                .mb-2 { margin-bottom: 8px; }
+                .mb-3 { margin-bottom: 12px; }
+                .p-2 { padding: 8px; }
+                .mt-2 { margin-top: 8px; }
+                .d-inline-block { display: inline-block; }
+                .receipt-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; border: 2px solid #000; }
+                .receipt-table th { border: 1px solid #000; padding: 5px; background: #f0f0f0; }
+                .receipt-table td { border: 1px solid #000; padding: 5px; }
+                .bg-light { background-color: #f8f9fa; }
+                .flex-between { display: flex; justify-content: space-between; }
+                .italic { font-style: italic; }
             </style>
         </head>
-        <body>
+        <body onload="window.print(); setTimeout(window.close, 1000);">
             <div class="receipt-container">
-                <div class="header">
-                    <h2>TIMSON BOOKSHOP</h2>
-                    <p>CASHIER MODULE COPY</p>
-                    <p>Tel: +234 800 123 4567</p>
+                <div class="text-center border-bottom pb-2 mb-2">
+                    <h3 class="fw-bold text-danger mb-1">TIMSON BOOKSHOP AND STATIONERY STORES</h3>
+                    <div class="fw-bold" style="font-size: 10px;">
+                        Head Office: Timson Building, Opposite Takie Roundabout,<br>
+                        Ogbomoso. Oyo State. Nigeria<br>
+                        Dealer In All Kinds Of Textbooks With Office Equipment.
+                    </div>
+                    <div class="mt-2 fw-bold" style="font-size: 11px;">
+                        GSM No: 08034155216, 08030470763, 08070600001
+                    </div>
                 </div>
-                
-                <div class="meta">
-                    <div class="meta-row"><span>Date:</span> <span>${new Date(txn.date).toLocaleString()}</span></div>
-                    <div class="meta-row"><span>Receipt #:</span> <span>${txn.refNo}</span></div>
-                    <div class="meta-row"><span>Cashier:</span> <span>${txn.cashierName}</span></div>
-                    <div class="meta-row"><span>Seller:</span> <span>${txn.sellerName}</span></div>
-                    <div class="meta-row"><span>Customer:</span> <span>${txn.customerName}</span></div>
+
+                <div class="text-center mb-2">
+                    <div class="fw-bold border-bottom d-inline-block px-2">CASHSALES RECEIPT</div>
+                    <div class="fw-bold mt-1">Ref No: ${txn.refNo}</div>
                 </div>
-                
-                <table>
+
+                <div class="mb-2 fw-bold" style="font-size: 11px;">
+                    <div class="flex-between"><span>Sales Staff: ${txn.cashierName || 'eriipe'}</span> <span>Date: ${dateStr}</span></div>
+                    <div>Customer: ${txn.customerName || 'Walk-in'}</div>
+                </div>
+
+                <table class="receipt-table fw-bold">
                     <thead>
                         <tr>
-                            <th style="text-align: left;">Qty</th>
-                            <th>Unit P.</th>
-                            <th>Total</th>
+                            <th>STOCK NAME</th>
+                            <th>QTY</th>
+                            <th>PRICE</th>
+                            <th>TOTAL</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${itemsHtml}
                     </tbody>
                 </table>
-                
-                <div class="totals">
-                    <div class="totals-row"><span>Subtotal:</span> <span>₦${Number(txn.subtotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
-                    ${Number(txn.discountPercent || 0) > 0 ? `<div class="totals-row"><span>Discount:</span> <span>${txn.discountPercent}%</span></div>` : ''}
-                    <div class="totals-row grand-total"><span>TOTAL DUE:</span> <span>₦${Number(txn.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
-                    
-                    <div class="divider"></div>
-                    <div class="totals-row"><span>Payment Method:</span> <span>${txn.paymentMethod}</span></div>
-                    ${txn.paymentMethod === 'Cash' ? `
-                        <div class="totals-row"><span>Amount Tendered:</span> <span>₦${Number(txn.cashReceived).toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
-                        <div class="totals-row"><span>Change:</span> <span>₦${Number(txn.changeProvided).toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
-                    ` : txn.paymentMethod !== 'Credit Account' ? `
-                        <div class="totals-row"><span>Reference:</span> <span>${txn.referenceNumber || 'N/A'}</span></div>
-                    ` : `<div class="totals-row" style="color:red; font-weight:bold;"><span>*ACCOUNT CHARGED TO DEBT*</span></div>`}
+
+                <div class="border-dark p-2 mb-2 text-center bg-light">
+                    <h4 class="fw-bold mb-0">ACTUAL AMOUNT: ₦${Number(txn.totalAmount).toLocaleString()}</h4>
                 </div>
-                
-                <div class="footer">
-                    <p>Powered by Timson POS</p>
-                    <p style="margin-top:5px; font-weight:bold;">Thank you for your patronage!</p>
+
+                <div class="bg-light p-2 mb-2 border-dark fw-bold" style="font-size: 11px;">
+                    <div class="flex-between"><span>Cash:</span> <span>₦${(Number(txn.splitPayments?.cash) || 0).toLocaleString()}</span></div>
+                    ${(txn.splitPayments?.pos || 0) > 0 ? `<div class="flex-between"><span>POS:</span> <span>₦${(Number(txn.splitPayments.pos)).toLocaleString()}</span></div>` : ''}
+                    ${(txn.splitPayments?.transfer || 0) > 0 ? `<div class="flex-between"><span>Transfer:</span> <span>₦${(Number(txn.splitPayments.transfer)).toLocaleString()}</span></div>` : ''}
+                    ${txn.changeProvided > 0 ? `<div class="flex-between text-danger"><span>Change:</span> <span>₦${(Number(txn.changeProvided)).toLocaleString()}</span></div>` : ''}
+                </div>
+
+                <div class="fw-bold border-bottom pb-1 mb-1" style="font-size: 10px;">
+                    <div class="italic mb-1">PLEASE NOTE</div>
+                    <div class="italic">
+                        Goods Received In Good Condition Are Not Returnable.<br>
+                        Oja Ti Eralo Ni Daada Ekogbodo Gbepada Wa.
+                    </div>
+                </div>
+
+                <div class="text-center fw-bold mb-2">Thank For Your Patronage</div>
+
+                <div class="text-center border-dark p-1" style="font-size: 9px; background: #fffdf0;">
+                    <div class="text-danger fw-bold">POWERED BY: BATH TECHNOLOGIES</div>
+                    <div>GSM: +234-803-419-2786 © 2020</div>
                 </div>
             </div>
-            <script>
-                window.onload = function() { window.print(); setTimeout(function() { window.close(); }, 500); }
-            </script>
         </body>
         </html>
     `);
     w.document.close();
 }
+function printReceiptModal() {
+    if (currentReceiptTxn) {
+        printReceipt(currentReceiptTxn);
+    }
+}
+window.printReceiptModal = printReceiptModal;

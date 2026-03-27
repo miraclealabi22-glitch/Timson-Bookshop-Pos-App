@@ -130,21 +130,10 @@
                             </div>
                         </div>
                         
-                        <div class="table-responsive catalog-panel-container">
-                            <table class="table table-hover align-middle mb-0 bg-white">
-                                <thead style="position: sticky; top: 0; background: #fff; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                                    <tr>
-                                        <th class="ps-3 border-0 py-3">Product Name</th>
-                                        <th class="border-0 py-3">Category</th>
-                                        <th class="border-0 py-3">Price (₦)</th>
-                                        <th class="border-0 py-3">Stock</th>
-                                        <th class="pe-3 border-0 py-3 text-end">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="catalogBody">
-                                    <tr><td colspan="5" class="py-5 text-center text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Loading catalog...</td></tr>
-                                </tbody>
-                            </table>
+                        <div class="catalog-panel-container p-3" style="overflow-y: auto; background-color: #f8f9fa;">
+                            <div class="row g-3" id="sellerCatalogGrid">
+                                <div class="col-12 py-5 text-center text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3"></i><br>Loading catalog...</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -194,9 +183,6 @@
                                         <i class="fas fa-paper-plane me-2"></i> Send to Cashier
                                     </button>
                                 </div>
-                                <button id="directCheckoutBtn" class="btn btn-success fw-bold shadow-sm w-100" onclick="openSellerCheckoutModal()" disabled>
-                                    <i class="fas fa-cash-register me-2"></i> Direct Checkout
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -205,114 +191,84 @@
             </div>
             </div>
 
-            <!-- 2. NYP SALES SCREEN (NEW - Direct Credit Sales) -->
+            <!-- 2. NYP SALES SCREEN (NEW - Split View) -->
             <div id="tab-nyp-sales" class="tab-pane d-none">
-                <div class="pos-panel p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
-                        <h4 class="fw-bold mb-0 text-primary"><i class="fas fa-file-invoice-dollar me-2"></i> NYP Sales Screen</h4>
-                        <div class="d-flex gap-3 align-items-center">
-                            <div class="text-end border-end pe-3">
-                                <label class="text-muted d-block small fw-bold">REF NO</label>
-                                <input type="text" id="nypRefNoDisplay" class="form-control form-control-sm text-uppercase fw-bold border-0 bg-light text-end" style="width: 120px;" value="Loading...">
-                            </div>
-                            <div class="text-end border-end pe-3 d-none d-md-block">
-                                <label class="text-muted d-block small fw-bold">YEAR</label>
-                                <span id="nypYearDisplay" class="fw-bold small text-dark">2026</span>
-                            </div>
-                            <div class="text-end border-end pe-3 d-none d-md-block">
-                                <label class="text-muted d-block small fw-bold">MONTH</label>
-                                <span id="nypMonthDisplay" class="fw-bold small text-dark">March</span>
-                            </div>
-                            <div class="text-end pe-2">
-                                <label class="text-muted d-block small fw-bold">DATE</label>
-                                <strong id="nypDateDisplay" class="text-dark small">2026-03-26</strong>
+                <div class="row g-4 align-items-start">
+                
+                <!-- Left Catalog Panel (NYP) -->
+                <div class="col-lg-8">
+                    <div class="pos-panel">
+                        <div class="main-panel-header d-flex justify-content-between align-items-center mb-0" style="background-color: #6366f1;">
+                            <h5 class="mb-0 fw-bold"><i class="fas fa-file-invoice-dollar me-2"></i> NYP Product Catalog</h5>
+                            <div class="d-flex gap-2">
+                                <select id="nypCategoryFilter" class="form-select form-select-sm border-0 shadow-sm" style="width: 150px;">
+                                    <option value="all">All Categories</option>
+                                </select>
+                                <div class="input-group input-group-sm shadow-sm" style="width: 250px;">
+                                    <span class="input-group-text bg-white border-0"><i class="fas fa-search text-muted"></i></span>
+                                    <input type="text" id="nypSearchInput" class="form-control border-0" placeholder="Search product...">
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="row g-3 mb-4 bg-light p-3 rounded border shadow-sm">
-                        <div class="col-md-5">
-                            <label class="form-label fw-bold text-muted small"><i class="fas fa-user-tag me-1 text-primary"></i> SELECT NYP ID (CUSTOMER)</label>
-                            <select id="nypSelectorMain" class="form-select form-select-lg shadow-sm border-primary" onchange="onNypSalesCustomerSelect()">
-                                <option value="" disabled selected>Choose customer for credit sale...</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold text-muted small"><i class="fas fa-id-badge me-1"></i> SALES STAFF</label>
-                            <input type="text" id="nypStaffDisplay" class="form-control form-control-lg bg-white" readonly value="Loading...">
-                        </div>
-                        <div class="col-md-4">
-                            <div id="nypCreditBanner" class="h-100 d-flex flex-column justify-content-center px-3 rounded border border-info bg-info text-white d-none">
-                                <small class="fw-bold text-uppercase" style="opacity: 0.8">Available Credit</small>
-                                <h3 id="nypAvailDisplay" class="mb-0 fw-bold">₦0.00</h3>
+                        
+                        <div class="catalog-panel-container p-3" style="overflow-y: auto; background-color: #f8f9fa;">
+                            <div class="row g-3" id="nypCatalogGrid">
+                                <div class="col-12 py-5 text-center text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3"></i><br>Loading NYP catalog...</div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Premium Table Entry System -->
-                    <div class="pos-panel border-0 bg-transparent shadow-none">
-                        <div class="table-responsive">
-                            <table class="table nyp-glass-table align-middle text-center" id="nypEntryTable">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 50px;">#</th>
-                                        <th style="width: 140px;">Stock Bal.</th>
-                                        <th style="min-width: 250px;">Stock Name / Description</th>
-                                        <th style="width: 90px;">Qty</th>
-                                        <th style="width: 100px;">Ctn Size</th>
-                                        <th style="width: 130px;">Rate (₦)</th>
-                                        <th style="width: 150px;">Sub-Total (₦)</th>
-                                        <th style="width: 100px;">Disc (%)</th>
-                                        <th style="width: 50px;"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="nypEntryBody">
-                                    <!-- Row 1 -->
-                                    <tr data-row-id="1">
-                                        <td><span class="text-muted fw-bold">1</span></td>
-                                        <td><input type="text" class="form-control form-control-sm text-center bg-transparent border-0 fw-bold nyp-stock-bal" readonly value="-"></td>
-                                        <td class="text-start">
-                                            <select class="form-select form-select-sm nyp-input-minimal nyp-product-input" onchange="onNypProductChange(this)">
-                                                <option value="" disabled selected>Select product...</option>
-                                            </select>
-                                        </td>
-                                        <td><input type="number" class="form-control nyp-input-minimal text-center nyp-qty" value="1" min="1" oninput="calculateNypRow(this)"></td>
-                                        <td><span class="nyp-status-pill nyp-status-stock nyp-ctn-size">-</span></td>
-                                        <td><input type="text" class="form-control form-control-sm text-center bg-white border-0 fw-bold nyp-price-rate" readonly value="0"></td>
-                                        <td><input type="text" class="form-control form-control-sm text-center bg-white border-0 fw-bold text-primary nyp-total-sum" readonly value="0"></td>
-                                        <td><input type="number" class="form-control nyp-input-minimal text-center nyp-discount" value="0" min="0" max="100" oninput="calculateNypRow(this)"></td>
-                                        <td><button class="btn btn-link text-danger p-0 d-none" onclick="removeNypRow(this)"><i class="fas fa-times-circle fs-5"></i></button></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                <!-- Right Cart Panel (NYP) -->
+                <div class="col-lg-4">
+                    <div class="pos-panel d-flex flex-column cart-panel-container">
+                        <div class="p-3 border-bottom bg-light">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-shopping-basket text-primary me-2"></i> NYP Credit Order</h5>
+                                    <small class="text-secondary fw-bold">Ref: <span id="nypRefNoDisplay">---</span></small>
+                                </div>
+                                <span id="nypCartCountBadge" class="badge bg-primary rounded-pill px-3 py-2">0 Items</span>
+                            </div>
+                            
+                            <!-- NYP Customer Selection -->
+                            <div>
+                                <label class="form-label small fw-bold text-muted mb-1">Select NYP Account</label>
+                                <select id="nypCustomerSelect" class="form-select form-select-sm fw-bold border-primary shadow-sm" onchange="window.calculateNypTotals()">
+                                    <option value="" disabled selected>Choose active NYP customer...</option>
+                                </select>
+                                <div id="nypCustomerLimitWarning" class="text-danger small mt-1 fw-bold d-none"><i class="fas fa-exclamation-triangle"></i> Exceeds Limit!</div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="row mt-4 align-items-end">
-                        <div class="col-md-6">
-                            <button class="btn btn-nyp-add" onclick="addNypRow()">
-                                <i class="fas fa-plus-circle me-2"></i> Add New Product Row
-                            </button>
+                        <!-- Cart Items -->
+                        <div class="flex-grow-1 p-3 bg-white" style="overflow-y: auto;">
+                            <div id="nypEmptyCartMsg" class="text-center py-5 text-muted">
+                                <i class="fas fa-shopping-cart fa-3x mb-3 text-light"></i>
+                                <h6>Cart is empty</h6>
+                                <p class="small">Add items to NYP order.</p>
+                            </div>
+                            <div id="nypCartItemsList" class="d-flex flex-column gap-3"></div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="nyp-total-display">
-                                <span class="label">Payable Amount</span>
-                                <div class="d-flex justify-content-end align-items-center gap-3">
-                                    <span id="nypAllTotalSum" class="value">₦0.00</span>
+
+                        <!-- Cart Totals & Checkout -->
+                        <div class="p-3 bg-light border-top mt-auto rounded-bottom">
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="fs-5 fw-bold text-dark">Total Due:</span>
+                                <span class="fs-5 fw-bold text-primary" id="nypCartTotal">₦0.00</span>
+                            </div>
+                            
+                            <div class="d-flex flex-column gap-2 mt-2">
+                                <div class="d-flex gap-2">
+                                    <button id="clearNypCartBtn" class="btn btn-outline-danger fw-bold shadow-sm" style="flex: 1;" title="Clear Cart"><i class="fas fa-trash"></i></button>
+                                    <button id="processNypSaleBtn" class="btn btn-primary fw-bold shadow-sm" style="flex: 4;" disabled onclick="window.processNypSale()">
+                                        <i class="fas fa-check-double me-2"></i> Complete NYP Sale
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <div class="mt-4 pt-4 border-top d-flex justify-content-between">
-                        <button class="btn btn-outline-danger px-4 fw-bold rounded-pill" onclick="clearNypScreen()">
-                            <i class="fas fa-trash-alt me-2"></i> Reset Screen
-                        </button>
-                        <button id="nypSubmitBtn" class="btn btn-primary px-5 py-3 fw-bold shadow rounded-pill btn-lg" disabled onclick="finalizeNypScreenSale()">
-                            <i class="fas fa-check-double me-2"></i> Confirm & Finalize NYP Sale
-                        </button>
-                    </div>
-
+                </div>
 
                 </div>
             </div>
@@ -347,85 +303,6 @@
         </div>
     </div>
 
-    <!-- Seller Checkout Modal -->
-    <div class="modal fade" id="sellerCheckoutModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-success text-white border-0">
-                    <h5 class="modal-title fw-bold"><i class="fas fa-cash-register me-2"></i> Process Checkout</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4 bg-light">
-                    <h3 class="text-center fw-bold text-success mb-4" id="checkoutTotalDue">₦0.00</h3>
-                    
-                    <form id="checkoutForm">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-muted">Payment Method</label>
-                            <select id="paymentMethod" class="form-select form-select-lg shadow-sm" required onchange="toggleCheckoutFields()">
-                                <option value="" disabled selected>Select method...</option>
-                                <option value="Cash">Cash</option>
-                                <option value="POS">POS</option>
-                                <option value="Bank Transfer">Bank Transfer</option>
-                                <option value="Credit Account" id="optCreditAcc">Credit / NYP</option>
-                            </select>
-                        </div>
-
-                        <!-- Credit / NYP Fields -->
-                        <div id="creditFieldsCheckout" class="d-none mb-3 border border-primary rounded p-3 bg-white mt-2 shadow-sm">
-                            <label class="form-label fw-bold text-primary"><i class="fas fa-search me-1"></i> Select NYP Customer</label>
-                            <select id="creditCustomerCheckoutSelect" class="form-select form-select-lg shadow-sm border-primary mb-3" onchange="validateCreditSale()">
-                                <option value="" disabled selected>Choose active NYP customer...</option>
-                            </select>
-                            
-                            <div id="creditCustomerDetails" class="d-none bg-light p-3 rounded border border-light">
-                                <div class="row g-2 small">
-                                    <div class="col-6"><span class="text-muted">Name:</span> <br><strong id="ccName">---</strong></div>
-                                    <div class="col-6 text-end"><span class="text-muted">Phone:</span> <br><strong id="ccPhone">---</strong></div>
-                                    <div class="col-6 mt-3"><span class="text-muted">Credit Limit:</span> <br><strong id="ccLimit">₦0.00</strong></div>
-                                    <div class="col-6 mt-3 text-end"><span class="text-muted">Balance:</span> <br><strong id="ccBalance" class="text-danger">₦0.00</strong></div>
-                                    <div class="col-12 mt-3 pt-2 border-top">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <span class="text-muted fw-bold">Available Credit:</span>
-                                            <span id="ccAvailable" class="fs-5 fw-bold text-success">₦0.00</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div id="creditErrorMsg" class="alert alert-danger mt-3 d-none mb-0 small fw-bold shadow-sm">
-                                <i class="fas fa-exclamation-triangle me-1"></i> <span id="creditErrorText"></span>
-                            </div>
-                            <div id="creditSuccessMsg" class="alert alert-success mt-3 d-none mb-0 small fw-bold shadow-sm">
-                                <i class="fas fa-check-circle me-1"></i> Credit Sufficient. Request OK.
-                            </div>
-                        </div>
-
-                        <!-- Cash -->
-                        <div id="cashFieldsCheckout" class="d-none">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold text-muted">Amount Received (₦)</label>
-                                <input type="number" id="cashReceivedCheckout" class="form-control form-control-lg text-success fw-bold" step="0.01" min="0" oninput="calculateChangeCheckout()">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold text-muted">Change Due (₦)</label>
-                                <input type="text" id="changeDueCheckout" class="form-control form-control-lg bg-white" readonly>
-                            </div>
-                        </div>
-
-                        <!-- Transfer/POS -->
-                        <div id="refFieldsCheckout" class="d-none mb-3">
-                            <label class="form-label fw-bold text-muted" id="refLabelCheckout">Reference Number</label>
-                            <input type="text" id="refNumberCheckout" class="form-control form-control-lg" placeholder="Enter Ref ID">
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer border-0 bg-white justify-content-between">
-                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success px-5 fw-bold" id="confirmCheckoutBtn" disabled onclick="finalizeSellerCheckout()"><i class="fas fa-check me-2"></i> Complete Sale</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Add to Cart Modal -->
     <div class="modal fade" id="addToCartModal" tabindex="-1" aria-hidden="true">

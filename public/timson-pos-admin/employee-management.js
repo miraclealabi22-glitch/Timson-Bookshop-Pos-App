@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             await set(ref(db, `usersRef/${uid}`), empData);
             
-            bootstrap.Modal.getInstance(document.getElementById('employeeModal')).hide();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('employeeModal')).hide();
             e.target.reset(); // clear form
             
         } catch(err) {
@@ -133,7 +133,7 @@ function renderTable() {
             <td class="fw-bold">${emp.username || emp.name || emp.email || 'N/A'}</td>
             <td><span class="badge ${getRoleBadgeClass(emp.role)}">${emp.role || 'User'}</span></td>
             <td><span class="badge ${emp.status === 'Active' ? 'bg-success' : 'bg-secondary'}">${emp.status || 'Active'}</span></td>
-            <td><button class="btn btn-sm btn-outline-danger btn-delete" data-id="${emp.id}"><i class="fas fa-trash data-id="${emp.id}" pointer-events-none"></i> Delete</button></td>
+            <td><button class="btn btn-sm btn-outline-danger btn-delete" data-id="${emp.id}"><i class="fas fa-trash pointer-events-none"></i> Delete</button></td>
         `;
         tableBody.appendChild(tr);
     });

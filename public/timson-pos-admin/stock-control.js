@@ -142,7 +142,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const productRef = ref(database, `stockRef/${currentEditId}`);
             update(productRef, { StockQuantity: finalAmount })
                 .then(() => {
-                    const modalInstance = bootstrap.Modal.getInstance(updateStockModal);
+                    const modalInstance = bootstrap.Modal.getOrCreateInstance(updateStockModal);
                     if (modalInstance) modalInstance.hide();
                     alert(`Successfully restocked ${addedAmount} units! New total: ${finalAmount}`);
                 })

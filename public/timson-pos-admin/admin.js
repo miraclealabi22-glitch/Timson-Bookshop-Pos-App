@@ -197,19 +197,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 initChart(e.target.value);
             });
         }
+    }
 
-        // Logout button logic (fires across all admin pages)
-        const logoutBtnElem = document.getElementById('logoutBtn');
-        if (logoutBtnElem) {
-            logoutBtnElem.addEventListener('click', (e) => {
-                e.preventDefault();
-                import("https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js").then(({getAuth, signOut}) => {
-                    const auth = getAuth();
-                    signOut(auth).then(() => {
-                        window.location.href = '../timson-pos-login/index.html';
-                    });
+    // Logout button logic (fires across all admin pages)
+    const logoutBtnElem = document.getElementById('logoutBtn');
+    if (logoutBtnElem) {
+        logoutBtnElem.addEventListener('click', (e) => {
+            e.preventDefault();
+            import("https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js").then(({getAuth, signOut}) => {
+                const auth = getAuth();
+                signOut(auth).then(() => {
+                    window.location.href = '../timson-pos-login/index.html';
                 });
             });
-        }
+        });
     }
 });

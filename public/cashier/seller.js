@@ -22,8 +22,10 @@ let currentUser = { name: "Seller", id: null };
 let products = [];
 let customers = [];
 let sellerRefId = "";
+let cart = [];
 let nypCart = [];
 let nypSelectedCustomer = null;
+let isNypMode = false;
 
 // --- Lifecycle ---
 document.addEventListener("DOMContentLoaded", () => {
@@ -45,7 +47,14 @@ function startClock() {
 }
 
 function generateRefNo() {
-    sellerRefId = 'ORD-' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 1000);
+    let prefix = "POS";
+    if(currentUser && currentUser.name) {
+        const cleanName = currentUser.name.replace(/[^a-zA-Z]/g, '');
+        prefix = (cleanName.length > 0 ? cleanName.padEnd(3, 'X') : "POS").substring(0, 3).toUpperCase();
+    }
+    const randDigits = Math.floor(1000 + Math.random() * 9000);
+    sellerRefId = prefix + randDigits;
+    
     const dipRef = document.getElementById('sellerRefNo');
     const nypRef = document.getElementById('nypRefNoDisplay');
     if(dipRef) dipRef.innerText = sellerRefId;
@@ -76,8 +85,9 @@ function setupAuthListeners() {
         if (userNameDisplay) userNameDisplay.textContent = currentUser.name;
         
         const pic = document.getElementById('profilePics');
-        if(pic) pic.innerHTML = currentUser.name.charAt(0);
+        if(pic) pic.innerHTML = currentUser.name.charAt(0).toUpperCase();
 
+        generateRefNo(); // Update prefix once user loads
         loadDataSubscriptions();
     });
 
@@ -97,6 +107,7 @@ function loadDataSubscriptions() {
         products = Object.entries(data).map(([k, v]) => ({ id: k, ...v }));
         populateCategories();
         renderCatalog();
+        if(typeof window.renderNypCatalog === 'function') window.renderNypCatalog();
         updateCartAfterStockChange();
         updateProductOptionsHTML();
     });
@@ -127,7 +138,21 @@ function setupDOMEventListeners() {
     const clearBtn = document.getElementById('clearCartBtn');
     const applyBtn = document.getElementById('submitOrderBtn');
     
-    if(searchInput) searchInput.addEventListener('input', renderCatalog);
+    if(searchInput) {
+        searchInput.addEventListener('input', renderCatalog);
+        searchInput.addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') {
+                e.preventDefault();
+                const q = searchInput.value.toLowerCase().trim();
+                let filtered = products.filter(p => (p.barcode || '').toLowerCase() === q);
+                if(filtered.length === 1 && Number(filtered[0].StockQuantity) > 0) {
+                    addToCart(filtered[0].id);
+                    searchInput.value = '';
+                    renderCatalog();
+                }
+            }
+        });
+    }
     if(catFilter) catFilter.addEventListener('change', renderCatalog);
     if(clearBtn) clearBtn.addEventListener('click', () => { cart = []; renderCart(); });
     if(applyBtn) applyBtn.addEventListener('click', submitOrderToCashier);
@@ -190,18 +215,20 @@ window.populateCreditCustomersCheckout = function() {
 function renderCatalog() {
     const q = (document.getElementById('sellerSearchInput').value || '').toLowerCase();
     const cat = document.getElementById('sellerCategoryFilter').value;
-    const tbody = document.getElementById('catalogBody');
-    if(!tbody) return;
+    const grid = document.getElementById('sellerCatalogGrid');
+    if(!grid) return;
     
     let filtered = products.filter(p => {
-        const mQ = (p.Product || '').toLowerCase().includes(q);
+        const mQ = (p.Product || '').toLowerCase().includes(q) 
+                || (p.ProductCategory || '').toLowerCase().includes(q)
+                || (p.barcode || '').toLowerCase().includes(q);
         const mCat = cat === 'all' || p.ProductCategory === cat;
         return mQ && mCat;
     });
     
-    tbody.innerHTML = '';
+    grid.innerHTML = '';
     if(filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-muted text-center">No products found.</td></tr>';
+        grid.innerHTML = '<div class="col-12 text-center py-5 text-muted"><i class="fas fa-search-minus fa-3x mb-3"></i><h5>No products found.</h5></div>';
         return;
     }
     
@@ -209,20 +236,33 @@ function renderCatalog() {
         const qty = Number(p.StockQuantity) || 0;
         let badge = '';
         let dis = '';
-        if(qty <= 0) { badge = '<span class="badge bg-danger stock-badge">Out</span>'; dis = 'disabled'; }
-        else if(qty <= 5) { badge = `<span class="badge bg-warning text-dark stock-badge">${qty} Low</span>`; }
-        else { badge = `<span class="badge bg-success stock-badge">${qty} In Stock</span>`; }
+        if(qty <= 0) { badge = '<span class="badge bg-danger rounded-pill px-3 py-1">Out of Stock</span>'; dis = 'disabled'; }
+        else if(qty <= 5) { badge = `<span class="badge bg-warning text-dark rounded-pill px-3 py-1">${qty} Low Stock</span>`; }
+        else { badge = `<span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3 py-1">${qty} In Stock</span>`; }
         
-        const row = document.createElement('tr');
-        row.className = 'catalog-item-row';
-        row.innerHTML = `
-            <td class="ps-3 fw-bold">${p.Product}</td>
-            <td class="text-muted small">${p.ProductCategory || '-'}</td>
-            <td class="fw-bold text-primary">₦${Number(p.SellingPrice||0).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-            <td>${badge}</td>
-            <td class="pe-3 text-end"><button class="btn btn-sm btn-outline-primary fw-bold" onclick="addToCart('${p.id}')" ${dis}><i class="fas fa-plus"></i></button></td>
+        const col = document.createElement('div');
+        col.className = 'col-6 col-md-4 col-xl-3';
+        col.innerHTML = `
+            <div class="card h-100 shadow-sm border-0 product-card laymen-card" onclick="if(${qty}>0) addToCart('${p.id}')" style="cursor: ${qty>0?'pointer':'not-allowed'}; transition: transform 0.2s, box-shadow 0.2s; ${qty<=0?'opacity:0.7;':''}" onmouseover="this.classList.add('shadow')" onmouseout="this.classList.remove('shadow')">
+                <div class="card-body text-center p-3 d-flex flex-column">
+                    <div class="mb-3 mt-2">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle" style="width: 60px; height: 60px;">
+                            <i class="fas fa-box-open fa-lg text-primary"></i>
+                        </div>
+                    </div>
+                    <h6 class="fw-bold mb-1 text-dark text-truncate" style="font-size: 1rem;">${p.Product}</h6>
+                    <small class="text-muted d-block mb-3" style="font-size: 0.8rem;">${p.ProductCategory || 'Uncategorized'}</small>
+                    <div class="mt-auto">
+                        <div class="fw-bold text-primary mb-2" style="font-size: 1.25rem;">₦${Number(p.SellingPrice||0).toLocaleString()}</div>
+                        <div class="mb-3">${badge}</div>
+                        <button class="btn ${qty>0?'btn-primary':'btn-secondary'} w-100 py-2 fw-bold shadow-sm laymen-add-btn" onclick="event.stopPropagation(); addToCart('${p.id}')" ${dis}>
+                            <i class="fas fa-cart-plus me-2"></i> Add Item
+                        </button>
+                    </div>
+                </div>
+            </div>
         `;
-        tbody.appendChild(row);
+        grid.appendChild(col);
     });
 }
 
@@ -230,6 +270,7 @@ function renderCatalog() {
 let currentModalProduct = null;
 
 window.addToCart = function(id) {
+    isNypMode = false;
     const prod = products.find(p => p.id === id);
     if(!prod) return;
     
@@ -276,12 +317,13 @@ window.confirmAddToCart = function() {
         return;
     }
     
-    // Check if adding same product + unit type + discount strictly
-    const existingIndex = cart.findIndex(c => c.id === id && c.unitType === uType && c.discountPercent === disc);
+    const targetCart = isNypMode ? nypCart : cart;
+    const existingIndex = targetCart.findIndex(c => c.id === id && c.unitType === uType && c.discountPercent === disc);
+    
     if(existingIndex !== -1) {
-        cart[existingIndex].qty += qty;
+        targetCart[existingIndex].qty += qty;
     } else {
-        cart.push({
+        targetCart.push({
             id: currentModalProduct.id,
             name: currentModalProduct.Product,
             price: price,
@@ -292,13 +334,12 @@ window.confirmAddToCart = function() {
         });
     }
     
-    const max = Number(currentModalProduct.StockQuantity) || 0;
-    
     const modalEl = document.getElementById('addToCartModal');
-    const modal = bootstrap.Modal.getInstance(modalEl);
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     if(modal) modal.hide();
     
-    renderCart();
+    if(isNypMode) renderNypCart();
+    else renderCart();
 }
 
 window.changeCartQty = function(i, d) {
@@ -362,18 +403,22 @@ function renderCart() {
         totalItems += c.qty;
         
         container.innerHTML += `
-            <div class="p-3 bg-light rounded border">
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="fw-bold text-dark w-75 text-truncate" title="${c.name}">${c.name} (${c.unitType})</span>
-                    <i class="fas fa-trash text-danger" style="cursor:pointer;" onclick="removeFromCart(${i})"></i>
+            <div class="p-3 bg-white border border-light shadow-sm rounded mb-2" style="transition: all 0.2s ease;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="mb-0 fw-bold text-dark text-truncate pe-2" style="max-width: 80%; font-size: 1.1rem;">${c.name} <span class="badge bg-light text-dark ms-1" style="font-size:0.75rem;">${c.unitType}</span></h6>
+                    <button class="btn btn-link text-danger p-0 m-0 laymen-trash-btn" onclick="removeFromCart(${i})" title="Remove Item"><i class="fas fa-trash-alt fa-lg"></i></button>
                 </div>
-                ${c.discountPercent > 0 ? `<div class="text-danger small fw-bold mb-1"><i class="fas fa-tag"></i> ${c.discountPercent}% OFF</div>` : ''}
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-primary fw-bold small">₦${(c.price - (c.price * (c.discountPercent/100))).toLocaleString(undefined, {minimumFractionDigits:2})} / ea</span>
-                    <div class="input-group input-group-sm" style="width: 100px;">
-                        <button class="btn btn-outline-secondary px-2" onclick="changeCartQty(${i}, -1)">-</button>
-                        <input type="text" class="form-control text-center px-1 bg-white fw-bold" value="${c.qty}" readonly>
-                        <button class="btn btn-outline-secondary px-2" onclick="changeCartQty(${i}, 1)">+</button>
+                ${c.discountPercent > 0 ? `<div class="text-danger small fw-bold mb-2"><i class="fas fa-tag"></i> ${c.discountPercent}% OFF</div>` : ''}
+                <div class="d-flex justify-content-between align-items-end mt-3">
+                    <div class="text-primary fw-bold fs-5">₦${itemFinal.toLocaleString(undefined, {minimumFractionDigits:2})} <small class="text-muted fs-6 fw-normal d-block" style="margin-top:-2px;">@ ₦${(c.price - (c.price * (c.discountPercent/100))).toLocaleString()} / ea</small></div>
+                    <div class="input-group" style="width: 140px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <button class="btn btn-light border px-3" onclick="changeCartQty(${i}, -1)" style="font-size:1.1rem;">
+                            <i class="fas fa-minus text-muted"></i>
+                        </button>
+                        <input type="text" class="form-control border text-center fw-bold bg-white" style="font-size:1.2rem; min-width: 40px;" value="${c.qty}" readonly>
+                        <button class="btn btn-light border px-3" onclick="changeCartQty(${i}, 1)" style="font-size:1.1rem;">
+                            <i class="fas fa-plus text-success"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -444,13 +489,76 @@ async function submitOrderToCashier() {
     }
 }
 
-// --- NYP Sales Screen Specific Logic (Table-Based Entry) ---
+// --- NYP SALES SCREEN (Split View Logic) ---
+
+window.renderNypCatalog = function() {
+    const grid = document.getElementById('nypCatalogGrid');
+    if(!grid) return;
+    
+    grid.innerHTML = '';
+    
+    let filtered = products;
+    const catFiler = document.getElementById('nypCategoryFilter')?.value;
+    const search = document.getElementById('nypSearchInput')?.value.toLowerCase();
+    
+    if(catFiler && catFiler !== 'all') {
+        filtered = filtered.filter(p => p.ProductCategory === catFiler);
+    }
+    if(search) {
+        filtered = filtered.filter(p => 
+            p.Product.toLowerCase().includes(search) || 
+            p.ProductCategory?.toLowerCase().includes(search) ||
+            (p.barcode || '').toLowerCase().includes(search)
+        );
+    }
+    
+    if(filtered.length === 0) {
+        grid.innerHTML = '<div class="col-12 text-center py-5 text-muted"><i class="fas fa-search-minus fa-3x mb-3"></i><h5>No NYP products found.</h5></div>';
+        return;
+    }
+    
+    filtered.forEach(p => {
+        const qty = Number(p.StockQuantity) || 0;
+        const sp = Number(p.SellingPrice) || 0;
+        
+        let badge = '';
+        let dis = '';
+        if(qty <= 0) { badge = '<span class="badge bg-danger rounded-pill px-3 py-1">Out of Stock</span>'; dis = 'disabled'; }
+        else if(qty <= 5) { badge = `<span class="badge bg-warning text-dark rounded-pill px-3 py-1">${qty} Low Stock</span>`; }
+        else { badge = `<span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3 py-1">${qty} In Stock</span>`; }
+        
+        const col = document.createElement('div');
+        col.className = 'col-6 col-md-4 col-xl-3';
+        col.innerHTML = `
+            <div class="card h-100 shadow-sm border-0 product-card laymen-card" onclick="if(${qty}>0) addToNypCart('${p.id}')" style="cursor: ${qty>0?'pointer':'not-allowed'}; transition: transform 0.2s, box-shadow 0.2s; ${qty<=0?'opacity:0.7;':''}" onmouseover="this.classList.add('shadow')" onmouseout="this.classList.remove('shadow')">
+                <div class="card-body text-center p-3 d-flex flex-column">
+                    <div class="mb-3 mt-2">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle" style="width: 60px; height: 60px;">
+                            <i class="fas fa-file-invoice-dollar fa-lg text-primary"></i>
+                        </div>
+                    </div>
+                    <h6 class="fw-bold mb-1 text-dark text-truncate" style="font-size: 1rem;">${p.Product}</h6>
+                    <small class="text-muted d-block mb-3" style="font-size: 0.8rem;">${p.ProductCategory || 'Uncategorized'}</small>
+                    <div class="mt-auto">
+                        <div class="fw-bold text-success mb-2" style="font-size: 1.25rem;">₦${sp.toLocaleString()}</div>
+                        <div class="mb-3">${badge}</div>
+                        <button class="btn ${qty>0?'btn-success':'btn-secondary'} w-100 py-2 fw-bold shadow-sm laymen-add-btn" onclick="event.stopPropagation(); addToNypCart('${p.id}')" ${dis}>
+                            <i class="fas fa-cart-plus me-2"></i> Add Credit Item
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        grid.appendChild(col);
+    });
+}
+
 function populateNypSelectors() {
-    const sel = document.getElementById('nypSelectorMain');
+    const sel = document.getElementById('nypCustomerSelect');
     if(!sel) return;
     const eligible = customers.filter(c => Number(c.creditLimit) > 0);
     const curr = sel.value;
-    sel.innerHTML = '<option value="" disabled selected>Choose customer for credit sale...</option>';
+    sel.innerHTML = '<option value="" disabled selected>Choose active NYP customer...</option>';
     eligible.forEach(c => {
         sel.innerHTML += `<option value="${c.id}">${c.name}</option>`;
     });
@@ -458,236 +566,255 @@ function populateNypSelectors() {
 }
 
 window.onNypSalesCustomerSelect = function() {
-    const cId = document.getElementById('nypSelectorMain').value;
-    const banner = document.getElementById('nypCreditBanner');
-    const availEl = document.getElementById('nypAvailDisplay');
-    const staffEl = document.getElementById('nypStaffDisplay');
+    // This function used to handle old layout elements, just forwarding to calculate here.
+    window.calculateNypTotals();
+}
+
+// Ensure the NYP screen gets populated correctly on load or data update
+document.addEventListener("DOMContentLoaded", () => {
+    const nypSearchInput = document.getElementById('nypSearchInput');
+    const nypCatFilter = document.getElementById('nypCategoryFilter');
     
-    const cObj = customers.find(c => c.id === cId);
-    if(cObj) {
-        nypSelectedCustomer = cObj;
-        const lim = Number(cObj.creditLimit) || 0;
-        const bal = Number(cObj.balanceOwed) || 0;
-        const avail = lim - bal;
-        window.currentNypAvailable = avail;
-        
-        availEl.innerText = `₦${avail.toLocaleString(undefined, {minimumFractionDigits:2})}`;
-        banner.classList.remove('d-none');
-        staffEl.value = currentUser.name;
-        
-        const now = new Date();
-        document.getElementById('nypRefNoDisplay').value = sellerRefId;
-        document.getElementById('nypYearDisplay').innerText = now.getFullYear();
-        document.getElementById('nypMonthDisplay').innerText = now.toLocaleString('default', { month: 'long' });
-        document.getElementById('nypDateDisplay').innerText = now.toISOString().split('T')[0];
+    if(nypSearchInput) {
+        nypSearchInput.addEventListener('input', window.renderNypCatalog);
+        nypSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const q = nypSearchInput.value.toLowerCase().trim();
+                let filtered = products.filter(p => (p.barcode || '').toLowerCase() === q);
+                if (filtered.length === 1 && Number(filtered[0].StockQuantity) > 0) {
+                    window.addToNypCart(filtered[0].id);
+                    nypSearchInput.value = '';
+                    window.renderNypCatalog();
+                }
+            }
+        });
+    }
+    if(nypCatFilter) nypCatFilter.addEventListener('change', window.renderNypCatalog);
+});
+
+window.addToNypCart = function(id) {
+    isNypMode = true;
+    const prod = products.find(p => p.id === id);
+    if(!prod) return;
+    
+    currentModalProduct = prod;
+    document.getElementById('modalProductId').value = id;
+    document.getElementById('modalProductName').innerText = `Add ${prod.Product} (NYP)`;
+    document.getElementById('modalUnitType').value = 'unit';
+    document.getElementById('modalQty').value = 1;
+    document.getElementById('modalDiscount').value = 0;
+    updateModalPrice();
+    
+    const modalEl = document.getElementById('addToCartModal');
+    if(modalEl) {
+        new bootstrap.Modal(modalEl).show();
     }
 }
 
-window.addNypRow = function() {
-    const tbody = document.getElementById('nypEntryBody');
-    const rowCount = tbody.rows.length + 1;
-    const tr = document.createElement('tr');
-    tr.setAttribute('data-row-id', rowCount);
-    tr.innerHTML = `
-        <td><span class="text-muted fw-bold">${rowCount}</span></td>
-        <td><input type="text" class="form-control form-control-sm text-center bg-transparent border-0 fw-bold nyp-stock-bal" readonly value="-"></td>
-        <td class="text-start">
-            <select class="form-select form-select-sm nyp-input-minimal nyp-product-input" onchange="onNypProductChange(this)">
-                ${productOptionsHTML}
-            </select>
-        </td>
-        <td><input type="number" class="form-control nyp-input-minimal text-center nyp-qty" value="1" min="1" oninput="calculateNypRow(this)"></td>
-        <td><span class="nyp-status-pill nyp-status-stock nyp-ctn-size">-</span></td>
-        <td><input type="text" class="form-control form-control-sm text-center bg-white border-0 fw-bold nyp-price-rate" readonly value="0"></td>
-        <td><input type="text" class="form-control form-control-sm text-center bg-white border-0 fw-bold text-primary nyp-total-sum" readonly value="0"></td>
-        <td><input type="number" class="form-control nyp-input-minimal text-center nyp-discount" value="0" min="0" max="100" oninput="calculateNypRow(this)"></td>
-        <td><button class="btn btn-link text-danger p-0" onclick="removeNypRow(this)"><i class="fas fa-times-circle fs-5"></i></button></td>
-    `;
-    tbody.appendChild(tr);
+window.changeNypCartQty = function(i, d) {
+    const item = nypCart[i];
+    const nq = item.qty + d;
+    if(nq <= 0) { nypCart.splice(i, 1); }
+    else { item.qty = nq; }
+    renderNypCart();
 }
 
-window.removeNypRow = function(btn) {
-    const row = btn.closest('tr');
-    row.remove();
-    // Re-index
-    const rows = document.querySelectorAll('#nypEntryBody tr');
-    rows.forEach((r, idx) => {
-        r.querySelector('td:first-child').innerText = idx + 1;
+window.removeFromNypCart = function(i) {
+    nypCart.splice(i, 1);
+    renderNypCart();
+}
+
+window.renderNypCart = function() {
+    const list = document.getElementById('nypCartItemsList');
+    const emptyMsg = document.getElementById('nypEmptyCartMsg');
+    const badge = document.getElementById('nypCartCountBadge');
+    
+    if(!list) return;
+    
+    if(nypCart.length === 0) {
+        list.innerHTML = "";
+        if(emptyMsg) emptyMsg.classList.remove('d-none');
+        if(badge) badge.innerText = "0 Items";
+        window.calculateNypTotals();
+        return;
+    }
+    
+    if(emptyMsg) emptyMsg.classList.add('d-none');
+    
+    let html = "";
+    let itemCount = 0;
+    
+    nypCart.forEach((c, i) => {
+        itemCount += c.qty;
+        const tot = (c.price * c.qty);
+        const disc = tot * (c.discountPercent / 100);
+        const finalTot = tot - disc;
+        
+        html += `
+        <div class="p-3 bg-white border border-light shadow-sm rounded mb-2" style="transition: all 0.2s ease;">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h6 class="mb-0 fw-bold text-dark text-truncate pe-2" style="max-width: 80%; font-size: 1.1rem;">${c.name} <span class="badge bg-light text-dark ms-1" style="font-size:0.75rem;">${c.unitType}</span></h6>
+                <button class="btn btn-link text-danger p-0 m-0 laymen-trash-btn" onclick="removeFromNypCart(${i})" title="Remove Item"><i class="fas fa-trash-alt fa-lg"></i></button>
+            </div>
+            ${c.discountPercent > 0 ? `<div class="text-danger small fw-bold mb-2"><i class="fas fa-tag"></i> ${c.discountPercent}% OFF</div>` : ''}
+            <div class="d-flex justify-content-between align-items-end mt-3">
+                <div class="text-primary fw-bold fs-5">₦${finalTot.toLocaleString(undefined, {minimumFractionDigits:2})} <small class="text-muted fs-6 fw-normal d-block" style="margin-top:-2px;">@ ₦${(c.price - (c.price * (c.discountPercent/100))).toLocaleString()} / ea</small></div>
+                <div class="input-group" style="width: 140px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <button class="btn btn-light border px-3" onclick="changeNypCartQty(${i}, -1)" style="font-size:1.1rem;">
+                        <i class="fas fa-minus text-muted"></i>
+                    </button>
+                    <input type="text" class="form-control border text-center fw-bold bg-white" style="font-size:1.2rem; min-width: 40px;" value="${c.qty}" readonly>
+                    <button class="btn btn-light border px-3" onclick="changeNypCartQty(${i}, 1)" style="font-size:1.1rem;">
+                        <i class="fas fa-plus text-success"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
     });
-    updateNypTotals();
+    
+    list.innerHTML = html;
+    if(badge) badge.innerText = `${itemCount} Item${itemCount > 1 ? 's' : ''}`;
+    window.calculateNypTotals();
 }
 
-window.onNypProductChange = function(select) {
-    const row = select.closest('tr');
-    const pId = select.value;
-    const prod = products.find(p => p.id === pId);
+window.calculateNypTotals = function() {
+    const totEl = document.getElementById('nypCartTotal');
+    const btn = document.getElementById('processNypSaleBtn');
+    const cid = document.getElementById('nypCustomerSelect')?.value;
     
-    if(!prod) {
-        row.querySelector('.nyp-stock-bal').value = "";
-        row.querySelector('.nyp-price-rate').value = "";
-        row.querySelector('.nyp-ctn-size').innerText = "-";
-        return;
-    }
-
-    row.setAttribute('data-prod-id', prod.id);
-    row.querySelector('.nyp-stock-bal').value = `${prod.StockQuantity} pcs`;
-    row.querySelector('.nyp-price-rate').value = Number(prod.SellingPrice || 0);
-    row.querySelector('.nyp-ctn-size').innerText = prod.cartonSize || "-";
-    
-    window.calculateNypRow(input);
-}
-
-window.calculateNypRow = function(input) {
-    const row = input.closest('tr');
-    const qty = Number(row.querySelector('.nyp-qty').value) || 0;
-    const rate = Number(row.querySelector('.nyp-price-rate').value) || 0;
-    const disc = Number(row.querySelector('.nyp-discount').value) || 0;
-    
-    const rowTot = qty * rate;
-    const discAmt = rowTot * (disc / 100);
-    const finalTot = rowTot - discAmt;
-    
-    row.querySelector('.nyp-total-sum').value = finalTot.toFixed(2);
-    updateNypTotals();
-}
-
-function updateNypTotals() {
-    const sums = document.querySelectorAll('.nyp-total-sum');
     let total = 0;
-    sums.forEach(s => total += Number(s.value) || 0);
+    nypCart.forEach(c => {
+        total += (c.price * c.qty) * (1 - c.discountPercent / 100);
+    });
     
-    const totalEl = document.getElementById('nypAllTotalSum');
-    const btn = document.getElementById('nypSubmitBtn');
+    if(totEl) totEl.innerText = `₦${total.toLocaleString(undefined, {minimumFractionDigits:2})}`;
     
-    totalEl.value = `₦${total.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+    const cObj = customers.find(x => x.id === cid);
+    const limitWarning = document.getElementById('nypCustomerLimitWarning');
     
-    const availLimit = window.currentNypAvailable || 0;
-    if(total > 0 && total <= availLimit) {
-        btn.disabled = false;
-        totalEl.classList.remove('text-danger');
-        totalEl.classList.add('text-success');
+    let isValid = false;
+
+    if(cObj && total > 0) {
+        const avail = (Number(cObj.creditLimit) || 0) - (Number(cObj.balanceOwed) || 0);
+        if(total <= avail) {
+            isValid = true;
+            if(limitWarning) limitWarning.classList.add('d-none');
+        } else {
+            isValid = false;
+            if(limitWarning) limitWarning.classList.remove('d-none');
+        }
     } else {
-        btn.disabled = true;
-        totalEl.classList.remove('text-success');
-        if(total > availLimit) totalEl.classList.add('text-danger');
-    }
-}
-
-window.clearNypScreen = function() {
-    if(!confirm("Reset entire NYP screen?")) return;
-    document.getElementById('nypSelectorMain').value = "";
-    document.getElementById('nypCreditBanner').classList.add('d-none');
-    document.getElementById('nypEntryBody').innerHTML = `
-        <tr data-row-id="1">
-            <td><span class="text-muted fw-bold">1</span></td>
-            <td><input type="text" class="form-control form-control-sm text-center bg-transparent border-0 fw-bold nyp-stock-bal" readonly value="-"></td>
-            <td class="text-start">
-                <select class="form-select form-select-sm nyp-input-minimal nyp-product-input" onchange="onNypProductChange(this)">
-                    ${productOptionsHTML}
-                </select>
-            </td>
-            <td><input type="number" class="form-control nyp-input-minimal text-center nyp-qty" value="1" min="1" oninput="calculateNypRow(this)"></td>
-            <td><span class="nyp-status-pill nyp-status-stock nyp-ctn-size">-</span></td>
-            <td><input type="text" class="form-control form-control-sm text-center bg-white border-0 fw-bold nyp-price-rate" readonly value="0"></td>
-            <td><input type="text" class="form-control form-control-sm text-center bg-white border-0 fw-bold text-primary nyp-total-sum" readonly value="0"></td>
-            <td><input type="number" class="form-control nyp-input-minimal text-center nyp-discount" value="0" min="0" max="100" oninput="calculateNypRow(this)"></td>
-            <td><button class="btn btn-link text-danger p-0 d-none" onclick="removeNypRow(this)"><i class="fas fa-times-circle fs-5"></i></button></td>
-        </tr>
-    `;
-    updateNypTotals();
-    nypSelectedCustomer = null;
-    generateRefNo();
-}
-
-window.finalizeNypScreenSale = async function() {
-    if(!nypSelectedCustomer) {
-        showAlert("Error", "Select customer first", "danger");
-        return;
+        if(limitWarning) limitWarning.classList.add('d-none');
     }
     
-    const btn = document.getElementById('nypSubmitBtn');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing Credit Sale...';
+    if(btn) btn.disabled = !isValid;
+}
+
+document.getElementById('clearNypCartBtn')?.addEventListener('click', () => { 
+    if(confirm("Clear NYP Cart?")) {
+        nypCart = []; 
+        renderNypCart(); 
+    }
+});
+
+window.processNypSale = async function() {
+    const btn = document.getElementById('processNypSaleBtn');
+    const cid = document.getElementById('nypCustomerSelect')?.value;
+    const cObj = customers.find(x => x.id === cid);
+    
+    if(!cObj || nypCart.length === 0) return;
+    
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
     btn.disabled = true;
 
-    const items = [];
-    let total = 0;
     let sub = 0;
-    
-    const rows = document.querySelectorAll('#nypEntryBody tr');
-    for(let row of rows) {
-        const pid = row.getAttribute('data-prod-id');
-        const pName = products.find(p => p.id === pid)?.Product || "Unknown";
-        const qty = Number(row.querySelector('.nyp-qty').value) || 0;
-        const rate = Number(row.querySelector('.nyp-price-rate').value) || 0;
-        const disc = Number(row.querySelector('.nyp-discount').value) || 0;
-        const rowSum = Number(row.querySelector('.nyp-total-sum').value) || 0;
-        
-        if(pid && qty > 0) {
-            items.push({
-                id: pid,
-                name: pName,
-                qty: qty,
-                price: rate,
-                discountPercent: disc,
-                unitType: "unit" // Based on table entry
-            });
-            sub += (qty * rate);
-            total += rowSum;
-        }
-    }
+    let total = 0;
+    nypCart.forEach(c => {
+        const t = c.price * c.qty;
+        sub += t;
+        total += t * (1 - c.discountPercent / 100);
+    });
 
-    if(items.length === 0) { btn.disabled = false; btn.innerHTML='Complete Sale'; return; }
-
-    const finalRefId = document.getElementById('nypRefNoDisplay').value || sellerRefId;
+    const finalRefId = document.getElementById('nypRefNoDisplay')?.value || sellerRefId;
 
     const txnPayload = {
         refNo: finalRefId,
         sellerName: currentUser.name,
-        cashierName: currentUser.name + " (NYP Screen)",
-        customerId: nypSelectedCustomer.id,
-        customerName: nypSelectedCustomer.name,
-        items: items,
+        cashierName: currentUser.name + " (NYP Checkout)",
+        customerId: cObj.id,
+        customerName: cObj.name,
+        items: nypCart,
         subtotal: sub,
         discountPercent: 0,
         totalAmount: total,
         paymentMethod: "Credit Account",
-        year: document.getElementById('nypYearDisplay').innerText,
-        month: document.getElementById('nypMonthDisplay').innerText,
         date: new Date().toISOString()
     };
 
     try {
         await push(ref(db, 'transactionsRef'), txnPayload);
 
-        for (let item of items) {
+        for (let item of nypCart) {
             const stockRefStr = `stockRef/${item.id}`;
             const sSnap = await get(ref(db, stockRefStr));
             if (sSnap.exists()) {
-                const currentStock = Number(sSnap.val().StockQuantity) || 0;
-                await update(ref(db, stockRefStr), { StockQuantity: Math.max(0, currentStock - item.qty) });
+                const pData = sSnap.val();
+                let actualQty = item.qty;
+                if(item.unitType === 'carton') actualQty = item.qty * (Number(pData.cartonSize) || 1);
+                else if(item.unitType === 'dozen') actualQty = item.qty * 12;
+                else if(item.unitType === 'half') actualQty = item.qty * 6;
+                else if(item.unitType === 'quarter') actualQty = item.qty * 3;
+                
+                const cartonSize = Number(pData.cartonSize) || 0;
+                let currentTotalUnits = Number(pData.StockQuantity) || 0;
+                
+                // If cartonSize is zero, it's just basic stock deduction.
+                if (cartonSize === 0) {
+                    const newTotal = Math.max(0, currentTotalUnits - actualQty);
+                    await update(ref(db, stockRefStr), { 
+                        StockQuantity: newTotal,
+                        unitQuantity: newTotal
+                    });
+                } else {
+                    // True deduction recalculating full cartons and remainder units
+                    const newTotalUnits = Math.max(0, currentTotalUnits - actualQty);
+                    const newCartonQty = Math.floor(newTotalUnits / cartonSize);
+                    const newUnitQty = newTotalUnits % cartonSize;
+                    
+                    await update(ref(db, stockRefStr), { 
+                        StockQuantity: newTotalUnits,
+                        cartonQuantity: newCartonQty,
+                        unitQuantity: newUnitQty
+                    });
+                }
             }
         }
 
-        const bal = Number(nypSelectedCustomer.balanceOwed) || 0;
-        await update(ref(db, `customersRef/${nypSelectedCustomer.id}`), { balanceOwed: bal + total });
-        await push(ref(db, `customersRef/${nypSelectedCustomer.id}/transactions`), {
+        const bal = Number(cObj.balanceOwed) || 0;
+        await update(ref(db, `customersRef/${cObj.id}`), { balanceOwed: bal + total });
+        await push(ref(db, `customersRef/${cObj.id}/transactions`), {
             date: txnPayload.date,
             type: "Purchase",
             amount: total,
             ref: finalRefId
         });
 
-        showAlert("Success", "NYP Credit Sale completed!", "success");
-        window.clearNypScreen();
+        showAlert("Success", "Credit Sale recorded successfully!", "success");
+        nypCart = [];
+        document.getElementById('nypCustomerSelect').value = "";
+        generateRefNo();
+        renderNypCart();
         
     } catch (err) {
         console.error(err);
-        showAlert("Error", "Transaction failed.", "danger");
+        showAlert("Error", "Transaction failed to record.", "danger");
     } finally {
-        btn.innerHTML = '<i class="fas fa-save me-2"></i> Complete Sale';
+        btn.innerHTML = '<i class="fas fa-check-double me-2"></i> Complete NYP Sale';
         btn.disabled = false;
     }
 }
+
 
 // --- NYP Payment (Credit Payment Collection) logic ---
 window.renderDebtorsReport = function() {
@@ -779,7 +906,7 @@ document.getElementById('nypForm')?.addEventListener('submit', async (e) => {
             });
 
             showAlert("Success", "NYP Payment processed!", "success");
-            const mdl = bootstrap.Modal.getInstance(document.getElementById('nypModal'));
+            const mdl = bootstrap.Modal.getOrCreateInstance(document.getElementById('nypModal'));
             if(mdl) mdl.hide();
         }
     } catch (err) {
@@ -791,193 +918,3 @@ document.getElementById('nypForm')?.addEventListener('submit', async (e) => {
     }
 });
 
-// --- Seller Checkout Logic (Credit / NYP) ---
-
-window.openSellerCheckoutModal = function () {
-    if(cart.length === 0) return;
-
-    let sub = 0; 
-    let finalTotal = 0;
-    cart.forEach(c => {
-        const t = c.price * c.qty;
-        sub += t;
-        finalTotal += t - (t * (c.discountPercent / 100));
-    });
-
-    window.sellerCheckoutTotal = finalTotal;
-    window.sellerCheckoutSubtotal = sub;
-
-    document.getElementById('checkoutTotalDue').innerText = `Amount Due: ₦${Number(finalTotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-
-    const pMethod = document.getElementById('paymentMethod');
-    pMethod.value = "";
-    document.getElementById('cashReceivedCheckout').value = "";
-    document.getElementById('changeDueCheckout').value = "";
-    document.getElementById('refNumberCheckout').value = "";
-    document.getElementById('creditCustomerCheckoutSelect').value = "";
-
-    window.toggleCheckoutFields();
-    new bootstrap.Modal(document.getElementById('sellerCheckoutModal')).show();
-}
-
-window.toggleCheckoutFields = function () {
-    const m = document.getElementById('paymentMethod').value;
-    const cFields = document.getElementById('cashFieldsCheckout');
-    const rFields = document.getElementById('refFieldsCheckout');
-    const crFields = document.getElementById('creditFieldsCheckout');
-    const btn = document.getElementById('confirmCheckoutBtn');
-
-    if(cFields) cFields.classList.add('d-none');
-    if(rFields) rFields.classList.add('d-none');
-    if(crFields) crFields.classList.add('d-none');
-    if(btn) btn.disabled = true;
-
-    if (m === 'Cash') {
-        cFields.classList.remove('d-none');
-        window.calculateChangeCheckout(); 
-    } else if (m === 'POS' || m === 'Bank Transfer') {
-        rFields.classList.remove('d-none');
-        document.getElementById('refLabelCheckout').innerText = m === 'POS' ? 'POS Slip Number' : 'Bank Reference Number';
-        btn.disabled = false;
-    } else if (m === 'Credit Account') {
-        crFields.classList.remove('d-none');
-        window.validateCreditSale();
-    }
-}
-
-window.calculateChangeCheckout = function () {
-    const rcvd = Number(document.getElementById('cashReceivedCheckout').value) || 0;
-    const chgEl = document.getElementById('changeDueCheckout');
-    const btn = document.getElementById('confirmCheckoutBtn');
-    const tot = Number(window.sellerCheckoutTotal || 0);
-
-    if (rcvd === tot && tot > 0) {
-        if(chgEl) { chgEl.value = `Exact ₦${rcvd.toLocaleString(undefined, { minimumFractionDigits: 2 })}`; chgEl.className = "form-control form-control-lg bg-white text-success fw-bold"; }
-        if(btn) btn.disabled = false;
-    } else if (rcvd > tot) {
-        if(chgEl) { chgEl.value = `Overpaid ₦${(rcvd - tot).toLocaleString(undefined, { minimumFractionDigits: 2 })} - Exact Required`; chgEl.className = "form-control form-control-lg bg-white text-warning fw-bold"; }
-        if(btn) btn.disabled = true;
-    } else {
-        if(chgEl) { chgEl.value = `Short ₦${(tot - rcvd).toLocaleString(undefined, { minimumFractionDigits: 2 })}`; chgEl.className = "form-control form-control-lg bg-white text-danger fw-bold"; }
-        if(btn) btn.disabled = true;
-    }
-}
-
-window.validateCreditSale = function() {
-    const cId = document.getElementById('creditCustomerCheckoutSelect').value;
-    const btn = document.getElementById('confirmCheckoutBtn');
-    const details = document.getElementById('creditCustomerDetails');
-    const errMsg = document.getElementById('creditErrorMsg');
-    const sucMsg = document.getElementById('creditSuccessMsg');
-    
-    details.classList.add('d-none');
-    errMsg.classList.add('d-none');
-    sucMsg.classList.add('d-none');
-    btn.disabled = true;
-    
-    if(!cId) return;
-    
-    const cObj = customers.find(c => c.id === cId);
-    if(!cObj) return;
-    
-    const limit = Number(cObj.creditLimit) || 0;
-    const bal = Number(cObj.balanceOwed) || 0;
-    const avail = limit - bal;
-    const tot = Number(window.sellerCheckoutTotal || 0);
-    
-    document.getElementById('ccName').innerText = cObj.name;
-    document.getElementById('ccPhone').innerText = cObj.phone || cObj.email || 'N/A';
-    document.getElementById('ccLimit').innerText = `₦${limit.toLocaleString(undefined, {minimumFractionDigits:2})}`;
-    document.getElementById('ccBalance').innerText = `₦${bal.toLocaleString(undefined, {minimumFractionDigits:2})}`;
-    
-    const availEl = document.getElementById('ccAvailable');
-    availEl.innerText = `₦${avail.toLocaleString(undefined, {minimumFractionDigits:2})}`;
-    availEl.className = avail >= tot ? "fs-5 fw-bold text-success" : "fs-5 fw-bold text-danger";
-    
-    details.classList.remove('d-none');
-    
-    if(tot > avail) {
-        document.getElementById('creditErrorText').innerText = `Credit limit exceeded! Available credit is only ₦${avail.toLocaleString(undefined, {minimumFractionDigits:2})}`;
-        errMsg.classList.remove('d-none');
-        btn.disabled = true;
-    } else {
-        sucMsg.classList.remove('d-none');
-        btn.disabled = false;
-    }
-}
-
-window.finalizeSellerCheckout = async function () {
-    const btn = document.getElementById('confirmCheckoutBtn');
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i>Processing...`;
-    btn.disabled = true;
-
-    const method = document.getElementById('paymentMethod').value;
-    const cRcvd = Number(document.getElementById('cashReceivedCheckout').value) || 0;
-    const refNum = document.getElementById('refNumberCheckout').value;
-    const tot = window.sellerCheckoutTotal;
-    const sub = window.sellerCheckoutSubtotal;
-    
-    let finalCId = null;
-    let finalCName = "Walk-in";
-    
-    if(method === 'Credit Account') {
-        finalCId = document.getElementById('creditCustomerCheckoutSelect').value;
-        const cObj = customers.find(c => c.id === finalCId);
-        if(cObj) finalCName = cObj.name;
-    } else {
-        const cInput = document.getElementById('cartCustomerInput').value.trim();
-        finalCName = cInput || "Walk-in";
-        const cObj = customers.find(x => x.name.toLowerCase() === finalCName.toLowerCase());
-        if(cObj) finalCId = cObj.id;
-    }
-
-    const txnPayload = {
-        refNo: sellerRefId,
-        sellerName: currentUser.name,
-        cashierName: currentUser.name + " (Direct)", 
-        customerId: finalCId,
-        customerName: finalCName,
-        items: cart,
-        subtotal: sub,
-        discountPercent: 0,
-        totalAmount: tot,
-        paymentMethod: method,
-        cashReceived: method === 'Cash' ? cRcvd : null,
-        changeProvided: 0,
-        referenceNumber: (method === 'Bank Transfer' || method === 'POS') ? refNum : null,
-        date: new Date().toISOString()
-    };
-
-    try {
-        await push(ref(db, 'transactionsRef'), txnPayload);
-
-        if (method === 'Credit Account' && finalCId) {
-            const custRef = `customersRef/${finalCId}`;
-            const cSnap = await get(ref(db, custRef));
-            if (cSnap.exists()) {
-                const bal = Number(cSnap.val().balanceOwed) || 0;
-                await update(ref(db, custRef), { balanceOwed: bal + tot });
-                await push(ref(db, `${custRef}/transactions`), {
-                    date: txnPayload.date,
-                    type: "Purchase",
-                    amount: tot,
-                    ref: sellerRefId
-                });
-            }
-        }
-
-        bootstrap.Modal.getInstance(document.getElementById('sellerCheckoutModal')).hide();
-        showAlert("Success", "Transaction completed successfully!", "success");
-        cart = [];
-        document.getElementById('cartCustomerInput').value = "";
-        generateRefNo();
-        renderCart();
-
-    } catch (err) {
-        console.error(err);
-        showAlert("Error", "Validation/Transaction Failed", "danger");
-    } finally {
-        btn.innerHTML = `<i class="fas fa-check me-2"></i>Complete Sale`;
-        btn.disabled = false;
-    }
-}
