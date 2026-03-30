@@ -17,15 +17,17 @@
 
 <body>
 
-    <!-- Sidebar -->
     <nav id="sidebar" class="sidebar">
-        <div class="sidebar-header">
-            <h3><i class="fas fa-book-open text-primary"></i> <span class="fs-5">TimsonBookshop</span></h3>
+        <div class="sidebar-header text-center py-4">
+            <div class="sidebar-logo-box">
+                <img src="../logo.png" alt="Timson Bookshop" class="sidebar-logo-img">
+            </div>
         </div>
         <ul class="list-unstyled components">
             <li class="active"><a href="admin-dashboard.html"><i class="fas fa-chart-line"></i> Dashboard</a></li>
             <li><a href="inventory-management.html"><i class="fas fa-boxes"></i> Inventory</a></li>
             <li><a href="stock-control.html"><i class="fas fa-clipboard-check"></i> Stock Control</a></li>
+            <li><a href="import/import-finalizer.html"><i class="fas fa-calculator"></i> Import Finalizer</a></li>
             <li><a href="pos/pos-cashier.html"><i class="fas fa-cash-register"></i> Cashier POS</a></li>
             <li><a href="pos/pos-cashier.html"><i class="fas fa-user-tie"></i> Seller POS</a></li>
             <li><a href="pos-cashier.html"><i class="fas fa-cash-register"></i> Cashier POS</a></li>
@@ -46,13 +48,23 @@
                 <button type="button" id="sidebarCollapse" class="btn btn-light d-lg-none shadow-sm">
                     <i class="fas fa-bars"></i>
                 </button>
+
+                <!-- GLOBAL TRANSACTION SEARCH -->
+                <div class="ms-3 d-none d-md-flex align-items-center">
+                    <div class="input-group input-group-sm shadow-sm" style="width: 250px;">
+                        <span class="input-group-text bg-white border-primary border-end-0"><i class="fas fa-search text-primary"></i></span>
+                        <input type="text" id="globalTxnSearchInput" class="form-control border-primary border-start-0" placeholder="Search Ref No (e.g. POS123)" onkeypress="if(event.key === 'Enter') searchAdminGlobalTxn()">
+                        <button class="btn btn-primary" type="button" onclick="searchAdminGlobalTxn()"><i class="fas fa-arrow-right"></i></button>
+                    </div>
+                </div>
+
                 <div class="d-flex ms-auto align-items-center">
                     <div class="dropdown me-3 dropdown-notification">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-bell"></i>
-                            <span class="badge bg-danger">3</span>
+                            <span class="badge bg-danger" id="notificationBadge">0</span>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" id="adminNotificationList">
                             <li>
                                 <h6 class="dropdown-header">Notifications</h6>
                             </li>
@@ -110,7 +122,7 @@
                         <div class="card-body p-4 d-flex align-items-center justify-content-between">
                             <div>
                                 <h6 class="text-muted fw-normal mb-2">Total Sales Today</h6>
-                                <h3 class="mb-0 fw-bold">₦2,450.00</h3>
+                                <h3 class="mb-0 fw-bold" id="statTodaySales">₦0.00</h3>
                             </div>
                             <div class="stat-icon bg-primary-light text-primary">
                                 <i class="fas fa-money-bill-wave"></i>
@@ -123,7 +135,7 @@
                         <div class="card-body p-4 d-flex align-items-center justify-content-between">
                             <div>
                                 <h6 class="text-muted fw-normal mb-2">Total Products in Stock</h6>
-                                <h3 class="mb-0 fw-bold">14,320</h3>
+                                <h3 class="mb-0 fw-bold" id="statTotalProducts">0</h3>
                             </div>
                             <div class="stat-icon bg-success-light text-success">
                                 <i class="fas fa-box-open"></i>
@@ -136,7 +148,7 @@
                         <div class="card-body p-4 d-flex align-items-center justify-content-between">
                             <div>
                                 <h6 class="text-muted fw-normal mb-2">Low Stock Alerts</h6>
-                                <h3 class="mb-0 fw-bold text-danger">12</h3>
+                                <h3 class="mb-0 fw-bold text-danger" id="statLowStock">0</h3>
                             </div>
                             <div class="stat-icon bg-danger-light text-danger">
                                 <i class="fas fa-exclamation-triangle"></i>
@@ -148,11 +160,117 @@
                     <div class="card stat-card border-0 shadow-sm h-100">
                         <div class="card-body p-4 d-flex align-items-center justify-content-between">
                             <div>
-                                <h6 class="text-muted fw-normal mb-2">Credit Customers Balance</h6>
-                                <h3 class="mb-0 fw-bold text-warning">₦1,240.50</h3>
+                                <h6 class="text-muted fw-normal mb-2">Total Debt Balance</h6>
+                                <h3 class="mb-0 fw-bold text-warning" id="statTotalDebt">₦0.00</h3>
                             </div>
                             <div class="stat-icon bg-warning-light text-warning">
                                 <i class="fas fa-users"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Account Summary Section (NEW) -->
+            <div class="row g-4 mb-4" id="adminDailyAccountSection">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
+                            <h5 class="fw-bold mb-0">Daily Account Summary</h5>
+                            <div class="d-flex gap-2">
+                                <input type="date" id="adminReportDate" class="form-control form-control-sm w-auto border-0 bg-light shadow-none">
+                            </div>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-3 text-center" id="adminDailyAccountContainer">
+                                <div class="col-md-3">
+                                    <h6 class="text-muted small fw-bold mb-1">Daily Revenue</h6>
+                                    <h4 class="fw-bold text-primary mb-0" id="admDailyRevenue">₦0.00</h4>
+                                </div>
+                                <div class="col-md-3 border-start">
+                                    <h6 class="text-muted small fw-bold mb-1">Total Expenses</h6>
+                                    <h4 class="fw-bold text-danger mb-0" id="admDailyExpenses">₦0.00</h4>
+                                </div>
+                                <div class="col-md-3 border-start">
+                                    <h6 class="text-muted small fw-bold mb-1">Bank Lodgment</h6>
+                                    <h4 class="fw-bold text-info mb-0" id="admDailyBank">₦0.00</h4>
+                                </div>
+                                <div class="col-md-3 border-start">
+                                    <h6 class="text-muted small fw-bold mb-1">Cash Available</h6>
+                                    <h4 class="fw-bold text-success mb-0" id="admDailyCash">₦0.00</h4>
+                                </div>
+                            </div>
+                            <hr class="my-3 opacity-25">
+                            <div class="row g-3 text-center">
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <div class="bg-success-subtle text-success p-2 rounded-circle me-2" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center;">
+                                            <i class="fas fa-money-bill-wave fs-sm"></i>
+                                        </div>
+                                        <div class="text-start">
+                                            <h6 class="text-muted small fw-bold mb-0">Total Cash</h6>
+                                            <h5 class="fw-bold text-dark mb-0" id="admCashTotal">₦0.00</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 border-start">
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <div class="bg-info-subtle text-info p-2 rounded-circle me-2" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center;">
+                                            <i class="fas fa-credit-card fs-sm"></i>
+                                        </div>
+                                        <div class="text-start">
+                                            <h6 class="text-muted small fw-bold mb-0">Total POS</h6>
+                                            <h5 class="fw-bold text-dark mb-0" id="admPosTotal">₦0.00</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 border-start">
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <div class="bg-primary-subtle text-primary p-2 rounded-circle me-2" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center;">
+                                            <i class="fas fa-university fs-sm"></i>
+                                        </div>
+                                        <div class="text-start">
+                                            <h6 class="text-muted small fw-bold mb-0">Total Transfer</h6>
+                                            <h5 class="fw-bold text-dark mb-0" id="admTransferTotal">₦0.00</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Pending Orders Section (Modernized) -->
+            <div class="row g-4 mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm overflow-hidden">
+                        <div class="card-header bg-white p-4 pending-card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="fw-extrabold mb-1 text-dark"><i class="fas fa-bolt text-warning me-2"></i>Live Queue Control</h5>
+                                <p class="text-muted small mb-0">Secure administrative management of pending floor transactions</p>
+                            </div>
+                            <span class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill px-4 py-2 fw-bold shadow-sm" id="pendingOrdersBadge">
+                                <span class="status-pulse"></span>0 Orders Pending
+                            </span>
+                        </div>
+                        <div class="card-body p-0 mt-3">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 border-top">
+                                    <thead class="table-light text-muted small text-uppercase">
+                                        <tr>
+                                            <th class="ps-4">Ref No</th>
+                                            <th>Seller</th>
+                                            <th>Customer</th>
+                                            <th>Amount</th>
+                                            <th>Time</th>
+                                            <th class="pe-4 text-end">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="adminPendingOrdersTable">
+                                        <tr><td colspan="6" class="text-center py-4 text-muted">No pending orders at the moment.</td></tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -200,50 +318,9 @@
                                             <th class="pe-4">Status</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td class="ps-4"><span class="fw-medium text-dark">The Great Gatsby</span>
-                                            </td>
-                                            <td><span class="fw-bold text-danger">5</span></td>
-                                            <td class="text-muted">10</td>
-                                            <td class="pe-4"><span
-                                                    class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1">Critical</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="ps-4"><span class="fw-medium text-dark">1984 by George
-                                                    Orwell</span></td>
-                                            <td><span class="fw-bold text-warning">12</span></td>
-                                            <td class="text-muted">15</td>
-                                            <td class="pe-4"><span
-                                                    class="badge bg-warning-subtle text-warning rounded-pill px-2 py-1">Low</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="ps-4"><span class="fw-medium text-dark">To Kill a
-                                                    Mockingbird</span></td>
-                                            <td><span class="fw-bold text-warning">18</span></td>
-                                            <td class="text-muted">20</td>
-                                            <td class="pe-4"><span
-                                                    class="badge bg-warning-subtle text-warning rounded-pill px-2 py-1">Low</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="ps-4"><span class="fw-medium text-dark">Dune</span></td>
-                                            <td><span class="fw-bold text-danger">4</span></td>
-                                            <td class="text-muted">10</td>
-                                            <td class="pe-4"><span
-                                                    class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1">Critical</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="ps-4"><span class="fw-medium text-dark">Atomic Habits</span></td>
-                                            <td><span class="fw-bold text-danger">8</span></td>
-                                            <td class="text-muted">10</td>
-                                            <td class="pe-4"><span
-                                                    class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1">Critical</span>
-                                            </td>
-                                        </tr>
+                                    <tbody id="adminInventoryAlertsTable">
+                                        <!-- Real data injected here -->
+                                        <tr><td colspan="4" class="text-center py-4 text-muted small">Loading alerts...</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -278,7 +355,7 @@
                                             <th class="pe-4 text-end">Date</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody id="adminRecentTxnTable">
                                         <tr>
                                             <td class="ps-4 text-muted fw-medium">#TXN-8745</td>
                                             <td>
@@ -357,6 +434,25 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div class="modal fade" id="receiptModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-success text-white border-0">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-receipt me-2"></i> Transaction Receipt</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4" id="receiptContent" style="background: #f8f9fa;">
+                    <!-- Receipt content will be populated here -->
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="printAdminReceiptModal()"><i class="fas fa-print me-2"></i> Print Receipt</button>
                 </div>
             </div>
         </div>

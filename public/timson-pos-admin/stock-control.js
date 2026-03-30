@@ -1,4 +1,4 @@
-// import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -89,11 +89,124 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     };
 
-    const stockRef = ref(database, 'stockRef');
-    onValue(stockRef, (snapshot) => {
+    const updateStockStats = (products, transactions) => {
+        // 1. Stat Cards
+        const totalProducts = products.length;
+        const lowStock = products.filter(p => Number(p.StockQuantity) <= (Number(p.ReorderLevel) || 10) && Number(p.StockQuantity) > 0).length;
+        const outOfStock = products.filter(p => Number(p.StockQuantity) <= 0).length;
+        
+        // Fast Selling calculation (sold last 7 days)
+        const last7Days = new Date(); last7Days.setDate(last7Days.getDate() - 7);
+        const productSoldQty = {};
+        transactions.forEach(t => {
+            const td = new Date(t.date || t.timestamp);
+            if(td >= last7Days) {
+                (t.items || []).forEach(it => {
+                    productSoldQty[it.name] = (productSoldQty[it.name] || 0) + (Number(it.qty) || 0);
+                });
+            }
+        });
+        const fastSelling = products.filter(p => (productSoldQty[p.Product] || 0) >= 50).length;
+
+        const statEls = document.querySelectorAll('.stat-card h3');
+        if (statEls.length >= 4) {
+            statEls[0].innerText = totalProducts.toLocaleString();
+            statEls[1].innerText = lowStock.toLocaleString();
+            statEls[2].innerText = outOfStock.toLocaleString();
+            statEls[3].innerText = fastSelling.toLocaleString();
+        }
+
+        // 2. Critical Depletion
+        const criticalUl = document.querySelector('.card .list-group-flush');
+        if (criticalUl) {
+            const criticalItems = products.filter(p => Number(p.StockQuantity) <= (Number(p.ReorderLevel) / 2 || 5)).sort((a,b) => Number(a.StockQuantity) - Number(b.StockQuantity)).slice(0, 4);
+            criticalUl.innerHTML = criticalItems.map(item => `
+                <li class="list-group-item d-flex justify-content-between align-items-center p-4 border-0 border-bottom">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-danger-light rounded p-2 me-3 text-danger"><i class="fas fa-book"></i></div>
+                        <div>
+                            <h6 class="mb-0 fw-bold text-dark fs-6">${item.Product}</h6>
+                            <small class="text-muted">${item.ProductCategory || 'General'}</small>
+                        </div>
+                    </div>
+                    <span class="fw-bold text-danger">${item.StockQuantity} Left</span>
+                </li>
+            `).join('') || '<li class="list-group-item text-center py-4 text-muted">No critical items found</li>';
+        }
+
+        renderStockMovementChart(products, transactions);
+    };
+
+    let stockChartInstance;
+    const renderStockMovementChart = (products, transactions) => {
+        const ctx = document.getElementById('stockChart');
+        if (!ctx) return;
+
+        // Turnover by Top 6 products
+        const stats = {};
+        transactions.forEach(t => {
+            (t.items || []).forEach(it => {
+                stats[it.name] = (stats[it.name] || 0) + (Number(it.qty) || 0);
+            });
+        });
+
+        const sorted = Object.entries(stats).sort((a,b) => b[1] - a[1]).slice(0, 6);
+        const labels = sorted.map(s => s[0]);
+        const turnoverData = sorted.map(s => s[1]);
+        const stockData = sorted.map(s => {
+            const p = products.find(prod => prod.Product === s[0]);
+            return p ? Number(p.StockQuantity) : 0;
+        });
+
+        if (stockChartInstance) stockChartInstance.destroy();
+
+        stockChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Turnover (Sold)',
+                        data: turnoverData,
+                        backgroundColor: '#4361ee',
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'Current Stock',
+                        data: stockData,
+                        backgroundColor: '#e2e8f0',
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top', align: 'end' } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, grid: { borderDash: [4, 4] } }
+                }
+            }
+        });
+    };
+
+    let currentProducts = [], currentTransactions = [];
+    const refreshAll = () => {
+        renderTable(currentProducts);
+        updateStockStats(currentProducts, currentTransactions);
+    };
+
+    onValue(ref(database, 'stockRef'), (snapshot) => {
         const data = snapshot.val();
-        const products = data ? Object.entries(data).map(([id, value]) => ({ id, ...value })) : [];
-        renderTable(products);
+        currentProducts = data ? Object.entries(data).map(([id, value]) => ({ id, ...value })) : [];
+        refreshAll();
+    });
+
+    onValue(ref(database, 'transactionsRef'), (snapshot) => {
+        const data = snapshot.val();
+        currentTransactions = data ? Object.values(data) : [];
+        refreshAll();
     });
 
     if (updateStockModal) {
@@ -112,6 +225,31 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('modalRecStock').textContent = recStock;
             if (addedQuantityInput) addedQuantityInput.value = '';
             if (newTotalStockSpan) newTotalStockSpan.textContent = currentStock;
+        });
+
+        // Use Recommended Link
+        const useRecommendedLink = document.getElementById('useRecommendedLink');
+        if (useRecommendedLink) {
+            useRecommendedLink.onclick = () => {
+                const recStock = Number(document.getElementById('modalRecStock').textContent || 0);
+                if (addedQuantityInput) {
+                    addedQuantityInput.value = recStock;
+                    addedQuantityInput.dispatchEvent(new Event('input'));
+                }
+            };
+        }
+    }
+
+    // Search Filter
+    const searchInput = document.querySelector('input[placeholder="Search product..."]');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            const rows = restockTable.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const name = row.querySelector('.fw-bold').textContent.toLowerCase();
+                row.style.display = name.includes(query) ? '' : 'none';
+            });
         });
     }
 

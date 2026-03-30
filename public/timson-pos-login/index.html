@@ -225,14 +225,9 @@
     <div class="container-fluid p-0">
         <div class="row g-0 min-vh-100">
 
-            <!-- Left Column: Branding -->
             <div class="col-lg-5 col-xl-6 branding-section text-white d-none d-lg-flex">
-                <div class="brand-logo-icon shadow-sm">
-                    <!-- Simple SVG Book/Store Icon -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
-                    </svg>
+                <div class="bg-white p-4 rounded-4 mb-4 shadow-sm" style="display: inline-block;">
+                    <img src="../logo.png" alt="Timson Bookshop" style="max-height: 120px;">
                 </div>
                 <h1 class="display-5 fw-bold mb-3 tracking-tight">TimsonBookshop POS</h1>
                 <p class="fs-5 text-white-50 fw-light" style="max-width: 480px;">
@@ -247,14 +242,7 @@
 
                     <!-- Mobile Only Header (Shows when left column is hidden) -->
                     <div class="d-lg-none text-center mb-5">
-                        <div class="brand-logo-icon bg-primary text-white mx-auto shadow-sm"
-                            style="background-color: var(--primary-color) !important;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
-                            </svg>
-                        </div>
+                        <img src="../logo.png" alt="Timson Bookshop" class="mb-3" style="max-height: 80px;">
                         <h1 class="h3 fw-bold text-dark mb-1">TimsonBookshop POS</h1>
                     </div>
 
@@ -334,78 +322,76 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('loginForm');
-            const btnText = document.getElementById('btnText');
-            const btnSpinner = document.getElementById('btnSpinner');
-            const submitBtn = form.querySelector('button[type="submit"]');
+        const form = document.getElementById('loginForm');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+        const submitBtn = form.querySelector('button[type="submit"]');
 
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-                if (!form.checkValidity()) {
-                    e.stopPropagation();
-                    form.classList.add('was-validated');
-                    return;
-                }
+            if (!form.checkValidity()) {
+                e.stopPropagation();
+                form.classList.add('was-validated');
+                return;
+            }
 
-                submitBtn.disabled = true;
-                btnText.textContent = 'Authenticating...';
-                btnSpinner.classList.remove('d-none');
+            submitBtn.disabled = true;
+            btnText.textContent = 'Authenticating...';
+            btnSpinner.classList.remove('d-none');
 
+            try {
+                const usernameVal = form.username.value.trim().toLowerCase().replace(/\s+/g, '');
+                const authEmail = usernameVal.includes('@') ? usernameVal : (usernameVal + '@timson.local');
+
+                const userCredential = await signInWithEmailAndPassword(auth, authEmail, form.password.value);
+                const user = userCredential.user;
+
+                // Determine role-based redirection
+                const email = user.email ? user.email.toLowerCase() : '';
+
+                // First attempt to get role from Realtime DB (usersRef/uid/role)
+                let userRole = null;
                 try {
-                    const usernameVal = form.username.value.trim().toLowerCase().replace(/\s+/g, '');
-                    const authEmail = usernameVal.includes('@') ? usernameVal : (usernameVal + '@timson.local');
-
-                    const userCredential = await signInWithEmailAndPassword(auth, authEmail, form.password.value);
-                    const user = userCredential.user;
-
-                    // Determine role-based redirection
-                    const email = user.email ? user.email.toLowerCase() : '';
-
-                    // First attempt to get role from Realtime DB (usersRef/uid/role)
-                    let userRole = null;
-                    try {
-                        const snap = await get(ref(db, `usersRef/${user.uid}`));
-                        if (snap.exists() && snap.val().role) {
-                            userRole = snap.val().role.toLowerCase();
-                        }
-                    } catch (dbErr) {
-                        console.warn("Could not fetch explicit role, falling back to email check", dbErr);
+                    const snap = await get(ref(db, `usersRef/${user.uid}`));
+                    if (snap.exists() && snap.val().role) {
+                        userRole = snap.val().role.toLowerCase();
                     }
-
-                    // If no DB role, fallback to credential keywords
-                    if (!userRole) {
-                        if (email.includes('admin')) userRole = 'admin';
-                        else if (email.includes('cashier')) userRole = 'cashier';
-                        else if (email.includes('seller')) userRole = 'seller';
-                        else userRole = 'admin'; // fallback default
-                    }
-
-                    // Perform Redirect
-                    btnText.textContent = 'Redirecting...';
-                    if (userRole === 'seller') {
-                        window.location.href = '../cashier/seller.html';
-                    } else if (userRole === 'cashier') {
-                        window.location.href = '../cashier/cashier.html';
-                    } else {
-                        window.location.href = '../timson-pos-admin/admin-dashboard.html'; // Admin
-                    }
-
-                } catch (err) {
-                    submitBtn.disabled = false;
-                    btnText.textContent = 'Sign in to workspace';
-                    btnSpinner.classList.add('d-none');
-
-                    const cardHeader = document.querySelector('.login-card-header');
-                    const alertHtml = `<div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="fas fa-exclamation-circle me-2"></i>${err.message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
-
-                    const existingAlert = document.querySelector('.alert');
-                    if (existingAlert) existingAlert.remove();
-
-                    cardHeader.insertAdjacentHTML('afterend', alertHtml);
+                } catch (dbErr) {
+                    console.warn("Could not fetch explicit role, falling back to email check", dbErr);
                 }
-            });`
+
+                // If no DB role, fallback to credential keywords
+                if (!userRole) {
+                    if (email.includes('admin')) userRole = 'admin';
+                    else if (email.includes('cashier')) userRole = 'cashier';
+                    else if (email.includes('seller')) userRole = 'seller';
+                    else userRole = 'admin'; // fallback default
+                }
+
+                // Perform Redirect
+                btnText.textContent = 'Redirecting...';
+                if (userRole === 'seller') {
+                    window.location.href = '../cashier/seller.html';
+                } else if (userRole === 'cashier') {
+                    window.location.href = '../cashier/cashier.html';
+                } else {
+                    window.location.href = '../timson-pos-admin/admin-dashboard.html'; // Admin
+                }
+
+            } catch (err) {
+                submitBtn.disabled = false;
+                btnText.textContent = 'Sign in to workspace';
+                btnSpinner.classList.add('d-none');
+
+                const cardHeader = document.querySelector('.login-card-header');
+                const alertHtml = `<div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="fas fa-exclamation-circle me-2"></i>${err.message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+
+                const existingAlert = document.querySelector('.alert');
+                if (existingAlert) existingAlert.remove();
+
+                cardHeader.insertAdjacentHTML('afterend', alertHtml);
+            }
         });
     </script>
 </body>

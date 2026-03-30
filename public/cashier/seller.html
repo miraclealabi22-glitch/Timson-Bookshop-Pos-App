@@ -57,14 +57,34 @@
         .btn-nyp-add:hover { background: #4f46e5; transform: scale(1.05); color: white; }
         
         .nyp-status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; }
-        .nyp-status-stock { background: #dcfce7; color: #166534; }    </style>
+        .nyp-status-stock { background: #dcfce7; color: #166534; }
+
+        /* Report Table Styling */
+        .report-header-band { background-color: #0b70b5; color: white; padding: 5px; text-align: center; font-size: 0.8rem; font-weight: bold; border-top-left-radius: 8px; border-top-right-radius: 8px; margin-top: 15px;}
+        .report-table-wrapper { background: #fff; padding: 0; border: 1px solid #0b70b5; border-top: none; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .report-table { margin-bottom: 0; font-size: 0.85rem; border-collapse: collapse; width: 100%; }
+        .report-table thead th { background: #f8fbff; color: #0b70b5; font-weight: 700; padding: 10px; border-bottom: 2px solid #0b70b5; vertical-align: bottom; }
+        .report-table tbody td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+        .report-table tbody tr:hover { background-color: #f1f5f9; }
+        .report-table .text-danger { font-weight: 600; }
+        .report-summary-row { background-color: #eef2ff !important; font-weight: bold; border-top: 2px solid #0b70b5; }
+        
+        @media print {
+            body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-print, .btn, .btn-print, .sidebar, .sidebar-overlay, .date-filter-section { display: none !important; }
+            .report-table-wrapper { box-shadow: none; border: 1px solid #ccc; }
+            .report-header-band { background-color: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; }
+            .report-table thead th { background-color: #eee !important; color: #000 !important; -webkit-print-color-adjust: exact; }
+        }
+    </style>
 </head>
 
 <body>
-    <!-- Sidebar -->
     <nav id="sidebar" class="sidebar">
-        <div class="sidebar-header">
-            <h3><i class="fas fa-book-open text-primary"></i> <span class="fs-5">TimsonBookshop</span></h3>
+        <div class="sidebar-header text-center py-4">
+            <div class="sidebar-logo-box">
+                <img src="../logo.png" alt="Timson Bookshop" class="sidebar-logo-img">
+            </div>
         </div>
         <ul class="list-unstyled components" id="navTabs">
             <li class="sidebar-header-label">SALES</li>
@@ -73,6 +93,10 @@
             
             <li class="sidebar-header-label mt-3">DEBT MANAGEMENT</li>
             <li><a href="#" class="sidebar-menu-link" onclick="switchTab('nyp-payment')"><i class="fas fa-hand-holding-usd action-icon"></i> NYP Payment (Debt)</a></li>
+            
+            <li class="sidebar-header-label mt-3">REPORTS</li>
+            <li><a href="#" class="sidebar-menu-link" onclick="switchTab('cashsales-report')"><i class="fas fa-chart-line action-icon"></i> CashSales Report</a></li>
+            <li><a href="#" class="sidebar-menu-link" onclick="switchTab('debtors-report')"><i class="fas fa-file-invoice action-icon"></i> All Debtors Report</a></li>
         </ul>
     </nav>
 
@@ -123,9 +147,9 @@
                                 <select id="sellerCategoryFilter" class="form-select form-select-sm border-0 shadow-sm" style="width: 150px;">
                                     <option value="all">All Categories</option>
                                 </select>
-                                <div class="input-group input-group-sm shadow-sm" style="width: 250px;">
-                                    <span class="input-group-text bg-white border-0"><i class="fas fa-search text-muted"></i></span>
-                                    <input type="text" id="sellerSearchInput" class="form-control border-0" placeholder="Search product...">
+                                <div class="input-group input-group-sm shadow-sm" style="width: 300px;">
+                                    <span class="input-group-text bg-white border-0"><i class="fas fa-barcode text-primary"></i></span>
+                                    <input type="text" id="sellerSearchInput" class="form-control border-0" placeholder="Search name or scan barcode...">
                                 </div>
                             </div>
                         </div>
@@ -204,9 +228,9 @@
                                 <select id="nypCategoryFilter" class="form-select form-select-sm border-0 shadow-sm" style="width: 150px;">
                                     <option value="all">All Categories</option>
                                 </select>
-                                <div class="input-group input-group-sm shadow-sm" style="width: 250px;">
-                                    <span class="input-group-text bg-white border-0"><i class="fas fa-search text-muted"></i></span>
-                                    <input type="text" id="nypSearchInput" class="form-control border-0" placeholder="Search product...">
+                                <div class="input-group input-group-sm shadow-sm" style="width: 300px;">
+                                    <span class="input-group-text bg-white border-0"><i class="fas fa-barcode text-primary"></i></span>
+                                    <input type="text" id="nypSearchInput" class="form-control border-0" placeholder="Search name or scan barcode...">
                                 </div>
                             </div>
                         </div>
@@ -280,7 +304,6 @@
                     <h2>NYP (Credit) Payment Collection</h2>
                     <p class="text-muted">Process payments for customer outstanding balances.</p>
                     <button class="btn btn-primary px-4 py-2" onclick="openNypPaymentModal()">Open NYP Payment Form</button>
-                    
                     <div class="table-responsive mt-5">
                         <h4 class="fw-bold mb-3 text-start">All Debtors</h4>
                         <table class="table table-hover table-bordered text-center align-middle">
@@ -296,6 +319,54 @@
                             <tbody id="debtorsTableBody">
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. CASHSALES REPORT SCREEN -->
+            <div id="tab-cashsales-report" class="tab-pane d-none">
+                <div class="pos-panel p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4 date-filter-section">
+                        <div class="d-flex align-items-center gap-3">
+                            <h4 class="mb-0 fw-bold text-dark"><i class="fas fa-chart-bar text-primary me-2"></i>Cash Sales Report Screen</h4>
+                            <div class="input-group input-group-sm shadow-sm" style="width: 200px;">
+                                <span class="input-group-text bg-white border-primary"><i class="fas fa-calendar-alt text-primary"></i></span>
+                                <input type="date" id="cashSalesReportDate" class="form-control border-primary fw-bold text-primary">
+                            </div>
+                            <div class="input-group input-group-sm shadow-sm" style="width: 200px;">
+                                <span class="input-group-text bg-white border-primary"><i class="fas fa-user-tie text-primary"></i></span>
+                                <select id="cashSalesReportSeller" class="form-select border-primary fw-bold text-primary">
+                                    <option value="all">All Sales Staff</option>
+                                </select>
+                            </div>
+                            <div class="input-group input-group-sm shadow-sm" style="width: 220px;">
+                                <span class="input-group-text bg-white border-primary"><i class="fas fa-barcode text-primary"></i></span>
+                                <input type="text" id="cashSalesReportBarcode" class="form-control border-primary fw-bold text-primary" placeholder="Filter By Barcode...">
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary shadow-sm btn-print" onclick="window.print()"><i class="fas fa-print me-2"></i>Print 24hrs Cash Sales Report</button>
+                    </div>
+
+                    <div id="cashSalesReportContainer">
+                        <!-- Report tables are injected here dynamically -->
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-spinner fa-spin fa-3x mb-3"></i>
+                            <h5>Loading Your Report...</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. ALL DEBTORS REPORT SCREEN -->
+            <div id="tab-debtors-report" class="tab-pane d-none">
+                <div class="pos-panel p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4 date-filter-section">
+                        <h4 class="mb-0 fw-bold text-dark"><i class="fas fa-file-invoice text-primary me-2"></i>All Debtors Report</h4>
+                        <button class="btn btn-secondary shadow-sm btn-print" onclick="window.print()"><i class="fas fa-print me-2"></i>Print Debtors List</button>
+                    </div>
+
+                    <div id="debtorsReportContainer">
+                        <!-- Report injected here -->
                     </div>
                 </div>
             </div>
@@ -318,6 +389,7 @@
                         <label class="form-label small fw-bold mb-1 text-muted">Unit Type</label>
                         <select class="form-select form-select-sm" id="modalUnitType">
                             <option value="unit">Unit</option>
+                            <option value="pack">Pack</option>
                             <option value="quarter">Quarter</option>
                             <option value="half">Half</option>
                             <option value="dozen">Dozen</option>
@@ -338,7 +410,7 @@
                             <input type="text" class="form-control form-control-sm bg-light text-primary fw-bold" id="modalPrice" readonly>
                         </div>
                     </div>
-                    <button class="btn btn-primary w-100 btn-sm fw-bold" onclick="confirmAddToCart()"><i class="fas fa-cart-plus me-1"></i> Add to Order</button>
+                    <button class="btn btn-primary w-100 btn-sm fw-bold" onclick="confirmAddToCart()"><i class="fas fa-cart-plus me-1"></i> Add To Order</button>
                 </div>
             </div>
         </div>

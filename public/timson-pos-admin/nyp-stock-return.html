@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NYP Stock Return - TimsonBookshop</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="admin.css">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+            --accent-emerald: #10b981;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f1f5f9;
+            color: var(--text-main);
+        }
+
+        /* Glassmorphism Card */
+        .premium-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .premium-header {
+            background: var(--primary-gradient);
+            padding: 2.5rem 2rem;
+            position: relative;
+            z-index: 1;
+            color: white;
+            text-align: center;
+        }
+
+        .premium-header::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: url('https://www.transparenttextures.com/patterns/cubes.png');
+            opacity: 0.1;
+            z-index: -1;
+        }
+
+        .premium-header h2 {
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .badge-premium {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            padding: 0.5rem 1.5rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        /* Form Styling */
+        .dynamic-form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem;
+            background: #fff;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .form-group-modern label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            display: block;
+            letter-spacing: 0.5px;
+        }
+
+        .form-control-modern {
+            border: 2px solid #f1f5f9;
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            background: #f8fafc;
+        }
+
+        .form-control-modern:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            background: white;
+        }
+
+        /* Table Styling */
+        .table-premium {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            margin-top: -8px;
+        }
+
+        .table-premium thead th {
+            background: #f8fafc;
+            border: none;
+            padding: 1rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .table-premium tbody tr {
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+            transition: all 0.2s ease;
+        }
+
+        .table-premium tbody tr:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+            z-index: 10;
+        }
+
+        .table-premium tbody td {
+            padding: 1.25rem 1rem;
+            border: none;
+            vertical-align: middle;
+        }
+
+        .table-premium tbody td:first-child { border-radius: 12px 0 0 12px; }
+        .table-premium tbody td:last-child { border-radius: 0 12px 12px 0; }
+
+        .row-num {
+            font-weight: 700;
+            color: #3b82f6;
+            width: 40px;
+            text-align: center;
+        }
+
+        .stock-balance-chip {
+            background: #eff6ff;
+            color: #1d4ed8;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .price-chip {
+            font-weight: 700;
+            color: var(--accent-emerald);
+        }
+
+        /* Save Button */
+        .btn-modern-save {
+            background: var(--text-main);
+            color: white;
+            border: none;
+            padding: 1rem 4rem;
+            border-radius: 14px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-modern-save:hover {
+            background: #0f172a;
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-modern-save:disabled {
+            background: #cbd5e1;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Sidebar & Content Layout Fixes */
+        #content {
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .status-overlay {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 9999;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav id="sidebar" class="sidebar">
+        <div class="sidebar-header text-center py-4">
+            <div class="sidebar-logo-box">
+                <img src="../logo.png" alt="Timson Bookshop" class="sidebar-logo-img">
+            </div>
+        </div>
+        <ul class="list-unstyled components">
+            <li><a href="admin-dashboard.html"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+            <li><a href="inventory-management.html"><i class="fas fa-boxes"></i> Inventory</a></li>
+            <li class="active"><a href="stock-control.html"><i class="fas fa-clipboard-check"></i> Stock Control</a></li>
+            <li><a href="import/import-finalizer.html"><i class="fas fa-calculator"></i> Import Finalizer</a></li>
+            <li><a href="sales-reports.html"><i class="fas fa-file-invoice-dollar"></i> Sales Reports</a></li>
+            <li><a href="customer-credit.html"><i class="fas fa-credit-card"></i> Customer Credit</a></li>
+            <li><a href="employee-management.html"><i class="fas fa-users"></i> Employees</a></li>
+            <li><a href="analytics.html"><i class="fas fa-chart-pie"></i> Analytics</a></li>
+            <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+        </ul>
+    </nav>
+
+    <!-- Page Content -->
+    <div id="content" class="content">
+        <div class="container-fluid max-w-7xl mx-auto">
+            
+            <div class="mb-5 d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="fw-bold h3 mb-1">NYP Reconciliation</h1>
+                    <p class="text-muted small mb-0">Manage returns and settle pending credit accounts with precision.</p>
+                </div>
+                <a href="stock-control.html" class="btn btn-outline-secondary btn-sm rounded-pill px-4">
+                    <i class="fas fa-chevron-left me-2"></i> Return to Stock Control
+                </a>
+            </div>
+
+            <div class="premium-card">
+                <div class="premium-header">
+                    <div class="badge-premium mb-3">NYP STOCK RETURN MODULE</div>
+                    <h2>Reconciliation Portal</h2>
+                    <p class="opacity-75 small">Process customer returns and automatically adjust inventory balances.</p>
+                </div>
+
+                <div class="card-body p-0">
+                    <form id="returnForm">
+                        <div class="dynamic-form-grid">
+                            <div class="form-group-modern">
+                                <label>Reference ID</label>
+                                <input type="text" id="returnRefNo" class="form-control-modern" readonly>
+                            </div>
+                            <div class="form-group-modern">
+                                <label>Target Transaction (NYP ID)</label>
+                                <select id="nypIdSelect" class="form-control-modern" required>
+                                    <option value="" selected disabled>Select NYP...</option>
+                                </select>
+                            </div>
+                            <div class="form-group-modern">
+                                <label>Processing Staff</label>
+                                <input type="text" id="staffName" class="form-control-modern" readonly>
+                            </div>
+                            <div class="form-group-modern">
+                                <label>Period (Year)</label>
+                                <input type="text" id="yearBox" class="form-control-modern text-center" readonly>
+                            </div>
+                            <div class="form-group-modern">
+                                <label>Period (Month)</label>
+                                <input type="text" id="monthBox" class="form-control-modern text-center" readonly>
+                            </div>
+                            <div class="form-group-modern">
+                                <label>Transaction Date</label>
+                                <input type="date" id="returnDate" class="form-control-modern" required>
+                            </div>
+                        </div>
+
+                        <!-- Customer Pulse Info -->
+                        <div id="customerInfoPanel" class="px-4 py-3 bg-light d-none align-items-center justify-content-between border-bottom">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary text-white rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-user-check"></i>
+                                </div>
+                                <div>
+                                    <span class="d-block small text-muted text-uppercase fw-bold ls-1">Customer Profile</span>
+                                    <span id="displayCustomer" class="fw-bold h6 mb-0 text-dark">---</span>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="d-block small text-muted text-uppercase fw-bold ls-1">Pending Debt</span>
+                                <span id="displayBalance" class="fw-bold h5 mb-0 text-danger">₦0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Modern Items Table -->
+                        <div class="p-4 bg-white">
+                            <div class="table-responsive">
+                                <table class="table-premium" id="returnItemsTable">
+                                    <thead>
+                                        <tr>
+                                            <th class="row-num-col">S/N</th>
+                                            <th>Stock Balance</th>
+                                            <th>Description</th>
+                                            <th style="width: 100px;">Return Qty</th>
+                                            <th class="text-center">Carton Size</th>
+                                            <th>Price Rate</th>
+                                            <th>Amount (₦)</th>
+                                            <th style="width: 100px;">Discount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="returnTableBody">
+                                        <tr>
+                                            <td colspan="8" class="text-center py-5">
+                                                <div class="opacity-25 mb-3">
+                                                    <i class="fas fa-search-dollar fa-3x"></i>
+                                                </div>
+                                                <p class="text-muted fw-500">Awaiting NYP Transaction Selection</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="text-center py-5 bg-light border-top">
+                            <button type="submit" id="saveReturnBtn" class="btn-modern-save" disabled>
+                                Finalize Return & Update Ledgers
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Toast Container -->
+    <div class="status-overlay" id="toastContainer"></div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Firebase Module -->
+    <script type="module" src="nyp-stock-return.js"></script>
+</body>
+
+</html>

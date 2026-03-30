@@ -83,15 +83,17 @@
 
 <body>
 
-    <!-- Sidebar -->
     <nav id="sidebar" class="sidebar">
-        <div class="sidebar-header">
-            <h3><i class="fas fa-book-open text-primary"></i> <span class="fs-5">TimsonBookshop</span></h3>
+        <div class="sidebar-header text-center py-4">
+            <div class="sidebar-logo-box">
+                <img src="../logo.png" alt="Timson Bookshop" class="sidebar-logo-img">
+            </div>
         </div>
         <ul class="list-unstyled components">
             <li><a href="admin-dashboard.html"><i class="fas fa-chart-line"></i> Dashboard</a></li>
             <li class="active"><a href="inventory-management.html"><i class="fas fa-boxes"></i> Inventory</a></li>
             <li><a href="stock-control.html"><i class="fas fa-clipboard-check"></i> Stock Control</a></li>
+            <li><a href="import/import-finalizer.html"><i class="fas fa-calculator"></i> Import Finalizer</a></li>
             <li><a href="sales-reports.html"><i class="fas fa-file-invoice-dollar"></i> Sales Reports</a></li>
             <li><a href="customer-credit.html"><i class="fas fa-credit-card"></i> Customer Credit</a></li>
             <li><a href="employee-management.html"><i class="fas fa-users"></i> Employees</a></li>
@@ -269,80 +271,142 @@
                 </div>
                 <div class="modal-body p-4 pt-3">
                     <form id="addProductForm">
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <label for="productName" class="form-label fw-medium text-dark flex-grow-1">Product
-                                    Name</label>
-                                <input type="text" class="form-control" id="productName" required
-                                    placeholder="e.g. Think and Grow Rich">
+                        <!-- Section 1: Basic Info -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fas fa-info-circle me-2"></i>Basic Information</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="productName" class="form-label fw-medium">Product Name</label>
+                                    <input type="text" class="form-control" id="productName" required placeholder="e.g. Apex Notebook">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="productCategory" class="form-label fw-medium">Category</label>
+                                    <select class="form-select" id="productCategory" required>
+                                        <option value="" disabled selected>Select category...</option>
+                                        <option value="Books">Books</option>
+                                        <option value="Stationery">Stationery</option>
+                                        <option value="Accessories">Accessories</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="baseUnit" class="form-label fw-medium">Base Unit (e.g. Pcs, Ream)</label>
+                                    <input type="text" class="form-control" id="baseUnit" required placeholder="pcs">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="barcode" class="form-label fw-medium">Barcode</label>
+                                    <input type="text" class="form-control" id="barcode" placeholder="Optional">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="reorderLevel" class="form-label fw-medium">Reorder Level</label>
+                                    <input type="number" class="form-control" id="reorderLevel" required min="0" value="10">
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <label for="productCategory" class="form-label fw-medium text-dark">Category</label>
-                                <select class="form-select" id="productCategory" required>
-                                    <option value="" disabled selected>Select category...</option>
-                                    <option value="Books">Books</option>
-                                    <option value="Stationery">Stationery</option>
-                                    <option value="Accessories">Accessories</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="costPrice" class="form-label fw-medium text-dark">Cost Price ($)</label>
-                                <input type="number" class="form-control" id="costPrice" step="0.01" required
-                                    placeholder="0.00">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="sellingPrice" class="form-label fw-medium text-dark">Selling Price
-                                    ($)</label>
-                                <input type="number" class="form-control" id="sellingPrice" step="0.01" required
-                                    placeholder="0.00">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="stockQuantity" class="form-label fw-medium text-dark">Initial Stock</label>
-                                <input type="number" class="form-control" id="stockQuantity" required min="0"
-                                    placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="reorderLevel" class="form-label fw-medium text-dark">Reorder Level</label>
-                                <input type="number" class="form-control" id="reorderLevel" required min="0"
-                                    placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="barcode" class="form-label fw-medium text-dark">Barcode (UPC/EAN)</label>
-                                <input type="text" class="form-control" id="barcode" placeholder="Scan or enter code">
-                            </div>
+                        </div>
 
-                            <div class="col-md-4">
-                                <label for="cartonQuantity" class="form-label fw-medium text-dark">Carton Quantity</label>
-                                <input type="number" class="form-control" id="cartonQuantity" min="0" placeholder="0">
+                        <!-- Section 2: Unit Configuration -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fas fa-layer-group me-2"></i>Unit Configuration</h6>
+                            <div class="row g-3">
+                                <!-- Carton Config -->
+                                <div class="col-md-6 border-end">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="allowCarton">
+                                        <label class="form-check-label fw-bold" for="allowCarton">Enable Carton</label>
+                                    </div>
+                                    <div id="cartonConfigFields" class="d-none">
+                                        <div class="mb-2">
+                                            <label class="form-label small">Carton Size (Base Units)</label>
+                                            <input type="number" class="form-control form-control-sm" id="cartonSize" placeholder="e.g. 12">
+                                        </div>
+                                        <div class="d-flex gap-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="allowHalf">
+                                                <label class="form-check-label small" for="allowHalf">Allow Half</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="allowQuarter">
+                                                <label class="form-check-label small" for="allowQuarter">Allow Qtr</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Pack Config -->
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="allowPack">
+                                        <label class="form-check-label fw-bold" for="allowPack">Enable Pack</label>
+                                    </div>
+                                    <div id="packConfigFields" class="d-none">
+                                        <div class="mb-2">
+                                            <label class="form-label small">Pack Size (Base Units)</label>
+                                            <input type="number" class="form-control form-control-sm" id="packSize" placeholder="e.g. 4">
+                                        </div>
+                                    </div>
+                                    <div class="form-check form-switch mt-3">
+                                        <input class="form-check-input" type="checkbox" id="allowDozen">
+                                        <label class="form-check-label fw-bold" for="allowDozen">Enable Dozen (12)</label>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <label for="cartonSize" class="form-label fw-medium text-dark">Carton Size (pcs)</label>
-                                <input type="number" class="form-control" id="cartonSize" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="unitQuantity" class="form-label fw-medium text-dark">Unit Quantity</label>
-                                <input type="number" class="form-control" id="unitQuantity" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="cartonSellingPrice" class="form-label fw-medium text-dark">Carton Selling Price ($)</label>
-                                <input type="number" class="form-control" id="cartonSellingPrice" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="pricePerDozen" class="form-label fw-medium text-dark">Price per Dozen ($)</label>
-                                <input type="number" class="form-control" id="pricePerDozen" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="pricePerHalf" class="form-label fw-medium text-dark">Price per Half ($)</label>
-                                <input type="number" class="form-control" id="pricePerHalf" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="pricePerQuarter" class="form-label fw-medium text-dark">Price per Quarter ($)</label>
-                                <input type="number" class="form-control" id="pricePerQuarter" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="pricePerUnit" class="form-label fw-medium text-dark">Price per Unit ($)</label>
-                                <input type="number" class="form-control" id="pricePerUnit" step="0.01" min="0" placeholder="0.00">
+                        </div>
+
+                        <!-- Section 3: Stock & Pricing -->
+                        <div class="mb-0">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fas fa-tags me-2"></i>Stock & Pricing</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-medium">Cost Price (Base Unit)</label>
+                                    <input type="number" class="form-control" id="costPrice" step="0.01" required placeholder="0.00">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-medium">Selling Price (Base Unit)</label>
+                                    <input type="number" class="form-control text-success fw-bold" id="sellingPrice" step="0.01" required placeholder="0.00">
+                                </div>
+                                
+                                <div class="col-12 bg-light p-3 rounded">
+                                    <label class="form-label fw-bold mb-2">Stock Entry (Mixed Units)</label>
+                                    <div class="row g-2">
+                                        <div class="col">
+                                            <label class="small text-muted">Cartons</label>
+                                            <input type="number" class="form-control form-control-sm" id="stockCartons" value="0">
+                                        </div>
+                                        <div class="col">
+                                            <label class="small text-muted">Packs</label>
+                                            <input type="number" class="form-control form-control-sm" id="stockPacks" value="0">
+                                        </div>
+                                        <div class="col">
+                                            <label class="small text-muted">Units</label>
+                                            <input type="number" class="form-control form-control-sm" id="stockUnits" value="0">
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 text-end">
+                                        <small class="text-primary fw-bold">Total Base Units: <span id="totalBaseUnitsDisplay">0</span></small>
+                                        <input type="hidden" id="finalTotalStock" value="0">
+                                    </div>
+                                </div>
+
+                                <div class="col-12 mt-3">
+                                    <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#pricingOverrides">
+                                        <i class="fas fa-sliders-h me-1"></i> Advanced Pricing Overrides (Optional)
+                                    </button>
+                                    <div class="collapse mt-2" id="pricingOverrides">
+                                        <div class="row g-2 p-2 border rounded bg-light">
+                                            <div class="col-md-4">
+                                                <label class="small">Carton Price</label>
+                                                <input type="number" class="form-control form-control-sm" id="cartonPriceOverride" placeholder="Auto-calc">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="small">Pack Price</label>
+                                                <input type="number" class="form-control form-control-sm" id="packPriceOverride" placeholder="Auto-calc">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="small">Dozen Price</label>
+                                                <input type="number" class="form-control form-control-sm" id="dozenPriceOverride" placeholder="Auto-calc">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </form>
@@ -366,81 +430,122 @@
                         aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4 pt-3">
-                    <form id="addProductForm">
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <label for="productName" class="form-label fw-medium text-dark flex-grow-1">Product
-                                    Name</label>
-                                <input type="text" class="form-control" id="editProductName" required
-                                    placeholder="e.g. Think and Grow Rich">
+                    <form id="editProductForm">
+                        <input type="hidden" id="editProductId">
+                        <!-- Section 1: Basic Info -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fas fa-info-circle me-2"></i>Basic Information</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="editProductName" class="form-label fw-medium">Product Name</label>
+                                    <input type="text" class="form-control" id="editProductName" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="editProductCategory" class="form-label fw-medium">Category</label>
+                                    <select class="form-select" id="editProductCategory" required>
+                                        <option value="Books">Books</option>
+                                        <option value="Stationery">Stationery</option>
+                                        <option value="Accessories">Accessories</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="editBaseUnit" class="form-label fw-medium">Base Unit</label>
+                                    <input type="text" class="form-control" id="editBaseUnit" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="editBarcode" class="form-label fw-medium">Barcode</label>
+                                    <input type="text" class="form-control" id="editBarcode">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="editReorderLevel" class="form-label fw-medium">Reorder Level</label>
+                                    <input type="number" class="form-control" id="editReorderLevel" required min="0">
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <label for="productCategory" class="form-label fw-medium text-dark">Category</label>
-                                <select class="form-select" id="editProductCategory" required>
-                                    <option value="" disabled selected>Select category...</option>
-                                    <option value="Books">Books</option>
-                                    <option value="Stationery">Stationery</option>
-                                    <option value="Accessories">Accessories</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="costPrice" class="form-label fw-medium text-dark">Cost Price ($)</label>
-                                <input type="number" class="form-control" id="editCostPrice" step="0.01" required
-                                    placeholder="0.00">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="sellingPrice" class="form-label fw-medium text-dark">Selling Price
-                                    ($)</label>
-                                <input type="number" class="form-control" id="editSellingPrice" step="0.01" required
-                                    placeholder="0.00">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="stockQuantity" class="form-label fw-medium text-dark">Initial Stock</label>
-                                <input type="number" class="form-control" id="editStockQuantity" required min="0"
-                                    placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="reorderLevel" class="form-label fw-medium text-dark">Reorder Level</label>
-                                <input type="number" class="form-control" id="editReorderLevel" required min="0"
-                                    placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="barcode" class="form-label fw-medium text-dark">Barcode (UPC/EAN)</label>
-                                <input type="text" class="form-control" id="editBarcode" placeholder="Scan or enter code">
-                            </div>
+                        </div>
 
-                            <div class="col-md-4">
-                                <label for="editCartonQuantity" class="form-label fw-medium text-dark">Carton Quantity</label>
-                                <input type="number" class="form-control" id="editCartonQuantity" min="0" placeholder="0">
+                        <!-- Section 2: Unit Configuration -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fas fa-layer-group me-2"></i>Unit Configuration</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6 border-end">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="editAllowCarton">
+                                        <label class="form-check-label fw-bold" for="editAllowCarton">Enable Carton</label>
+                                    </div>
+                                    <div id="editCartonConfigFields" class="d-none">
+                                        <div class="mb-2">
+                                            <label class="small">Carton Size</label>
+                                            <input type="number" class="form-control form-control-sm" id="editCartonSize">
+                                        </div>
+                                        <div class="d-flex gap-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="editAllowHalf">
+                                                <label class="form-check-label small" for="editAllowHalf">Allow Half</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="editAllowQuarter">
+                                                <label class="form-check-label small" for="editAllowQuarter">Allow Qtr</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="editAllowPack">
+                                        <label class="form-check-label fw-bold" for="editAllowPack">Enable Pack</label>
+                                    </div>
+                                    <div id="editPackConfigFields" class="d-none">
+                                        <div class="mb-2">
+                                            <label class="small">Pack Size</label>
+                                            <input type="number" class="form-control form-control-sm" id="editPackSize">
+                                        </div>
+                                    </div>
+                                    <div class="form-check form-switch mt-3">
+                                        <input class="form-check-input" type="checkbox" id="editAllowDozen">
+                                        <label class="form-check-label fw-bold" for="editAllowDozen">Enable Dozen</label>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <label for="editCartonSize" class="form-label fw-medium text-dark">Carton Size (pcs)</label>
-                                <input type="number" class="form-control" id="editCartonSize" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="editUnitQuantity" class="form-label fw-medium text-dark">Unit Quantity</label>
-                                <input type="number" class="form-control" id="editUnitQuantity" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="editCartonSellingPrice" class="form-label fw-medium text-dark">Carton Selling Price ($)</label>
-                                <input type="number" class="form-control" id="editCartonSellingPrice" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="editPricePerDozen" class="form-label fw-medium text-dark">Price per Dozen ($)</label>
-                                <input type="number" class="form-control" id="editPricePerDozen" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="editPricePerHalf" class="form-label fw-medium text-dark">Price per Half ($)</label>
-                                <input type="number" class="form-control" id="editPricePerHalf" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="editPricePerQuarter" class="form-label fw-medium text-dark">Price per Quarter ($)</label>
-                                <input type="number" class="form-control" id="editPricePerQuarter" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="editPricePerUnit" class="form-label fw-medium text-dark">Price per Unit ($)</label>
-                                <input type="number" class="form-control" id="editPricePerUnit" step="0.01" min="0" placeholder="0.00">
+                        </div>
+
+                        <!-- Section 3: Pricing -->
+                        <div>
+                            <h6 class="fw-bold text-primary mb-3"><i class="fas fa-tags me-2"></i>Pricing & Stock</h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="small">Cost Price</label>
+                                    <input type="number" class="form-control" id="editCostPrice" step="0.01" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small text-success fw-bold">Selling Price</label>
+                                    <input type="number" class="form-control fw-bold border-success" id="editSellingPrice" step="0.01" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small">Current Stock Units</label>
+                                    <input type="number" class="form-control bg-light" id="editStockQuantity" readonly>
+                                </div>
+                                <div class="col-12 mt-2">
+                                     <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#editPricingOverrides">
+                                        <i class="fas fa-sliders-h me-1"></i> Pricing Overrides
+                                    </button>
+                                    <div class="collapse mt-2" id="editPricingOverrides">
+                                        <div class="row g-2 p-2 border rounded bg-light">
+                                            <div class="col-md-4">
+                                                <label class="small">Carton Override</label>
+                                                <input type="number" class="form-control form-control-sm" id="editCartonPriceOverride">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="small">Pack Override</label>
+                                                <input type="number" class="form-control form-control-sm" id="editPackPriceOverride">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="small">Dozen Override</label>
+                                                <input type="number" class="form-control form-control-sm" id="editDozenPriceOverride">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </form>

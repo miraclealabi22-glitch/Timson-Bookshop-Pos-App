@@ -76,6 +76,21 @@ h6 {
     gap: 12px;
 }
 
+.sidebar-logo-box {
+    background: #fff;
+    padding: 15px;
+    border-radius: 12px;
+    display: inline-block;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin-bottom: 10px;
+}
+
+.sidebar-logo-img {
+    max-height: 60px;
+    width: auto;
+    object-fit: contain;
+}
+
 .sidebar ul.components {
     padding: 20px 0;
 }
@@ -289,4 +304,112 @@ h6 {
         background: rgba(0, 0, 0, 0.5);
         z-index: 999;
     }
+}
+
+/* Premium Receipt Customization */
+.receipt-paper {
+    background-color: #fff;
+    padding: 30px 20px;
+    position: relative;
+    font-family: 'Inter', sans-serif;
+    color: #333;
+    line-height: 1.5;
+}
+
+/* Modern Torn Edge Effect */
+.receipt-paper::before, .receipt-paper::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 10px;
+    background-repeat: repeat-x;
+    background-size: 20px 20px;
+    z-index: 2;
+}
+.receipt-paper::before {
+    top: -10px;
+    background-image: radial-gradient(circle at 10px -5px, transparent 12px, #fff 13px);
+}
+.receipt-paper::after {
+    bottom: -10px;
+    background-image: radial-gradient(circle at 10px 15px, transparent 12px, #fff 13px);
+}
+
+.receipt-header-title { font-weight: 800; letter-spacing: -0.5px; color: #1a1a1a; font-size: 1.25rem; }
+.receipt-label { font-size: 0.65rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+.receipt-value { font-size: 0.85rem; font-weight: 600; color: #1a1a1a; }
+
+.premium-separator { border-top: 1px dashed #ccc; margin: 15px 0; }
+.receipt-table th { 
+    font-size: 0.7rem; font-weight: 700; color: #666; 
+    text-transform: uppercase; padding: 10px 5px !important;
+    border: none !important; border-bottom: 2px solid #1a1a1a !important;
+}
+.receipt-table td { 
+    font-size: 0.8rem; padding: 12px 5px !important; 
+    border: none !important; color: #333;
+    border-bottom: 1px dotted #ccc !important;
+}
+.receipt-table tr:last-child td { border-bottom: none !important; }
+
+.receipt-total-banner { 
+    background: #f8f9fa; border-radius: 8px; padding: 15px; 
+    margin: 20px 0; border: 1px solid #eee;
+}
+
+.receipt-footer-brand { font-size: 0.6rem; letter-spacing: 1px; color: #999; text-transform: uppercase; }
+
+@media print {
+    .receipt-paper { box-shadow: none !important; border: 1px solid #eee !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; }
+    body { background: white !important; }
+}
+
+/* Premium Pending Order Styles */
+.pending-row { 
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pending-row:hover { 
+    background-color: rgba(67, 97, 238, 0.03) !important;
+    transform: scale(1.002);
+}
+
+.status-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--stat-warning);
+    display: inline-block;
+    margin-right: 8px;
+    box-shadow: 0 0 0 rgba(245, 158, 11, 0.4);
+    animation: status-pulse-anim 2s infinite;
+}
+
+@keyframes status-pulse-anim {
+    0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+.btn-admin-action {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.pending-card-header {
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.action-btn-group .btn {
+    border-radius: 8px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    font-weight: 600;
 }

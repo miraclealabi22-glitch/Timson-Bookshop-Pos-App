@@ -14,8 +14,13 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getDatabase(app);
+const auth = getAuth(app);
+
+function toTitleCase(str) {
+    if (!str) return "";
+    return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
 
 // --- Global State ---
 let currentUser = { name: "Seller", id: null };
@@ -26,6 +31,7 @@ let cart = [];
 let nypCart = [];
 let nypSelectedCustomer = null;
 let isNypMode = false;
+let completedTransactions = [];
 
 // --- Lifecycle ---
 document.addEventListener("DOMContentLoaded", () => {
@@ -118,7 +124,36 @@ function loadDataSubscriptions() {
         populateCustomerList();
         populateNypSelectors();
         if (typeof renderDebtorsReport === 'function') renderDebtorsReport();
+        if (typeof renderAllDebtorsReport === 'function') renderAllDebtorsReport();
         if (typeof populateCreditCustomersCheckout === 'function') populateCreditCustomersCheckout();
+    });
+
+    onValue(ref(db, 'transactionsRef'), snapshot => {
+        const data = snapshot.val() || {};
+        completedTransactions = Object.entries(data).map(([k, v]) => ({ id: k, ...v }));
+
+        // Populate seller dropdown for CashSales Report
+        const sellerSelect = document.getElementById('cashSalesReportSeller');
+        if (sellerSelect) {
+            const currentVal = sellerSelect.value || 'all';
+            const sellersWithNames = completedTransactions.map(t => t.sellerName).filter(Boolean);
+            const uniqueSellers = [...new Set(sellersWithNames)].sort();
+            
+            sellerSelect.innerHTML = '<option value="all">All Sales Staff</option>';
+            uniqueSellers.forEach(s => {
+                sellerSelect.innerHTML += `<option value="${s}">${s}</option>`;
+            });
+            
+            // Re-apply previous selection if still available
+            if (uniqueSellers.includes(currentVal)) {
+                sellerSelect.value = currentVal;
+            }
+        }
+        
+        const rDate = document.getElementById('cashSalesReportDate');
+        if (rDate && rDate.value) {
+            if (typeof window.renderCashSalesReport === 'function') window.renderCashSalesReport();
+        }
     });
 }
 
@@ -156,6 +191,26 @@ function setupDOMEventListeners() {
     if(catFilter) catFilter.addEventListener('change', renderCatalog);
     if(clearBtn) clearBtn.addEventListener('click', () => { cart = []; renderCart(); });
     if(applyBtn) applyBtn.addEventListener('click', submitOrderToCashier);
+    
+    const nypSearch = document.getElementById('nypSearchInput');
+    const nypCatFilter = document.getElementById('nypCategoryFilter');
+    
+    if(nypSearch) {
+        nypSearch.addEventListener('input', renderNypCatalog);
+        nypSearch.addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') {
+                e.preventDefault();
+                const q = nypSearch.value.toLowerCase().trim();
+                let filtered = products.filter(p => (p.barcode || '').toLowerCase() === q);
+                if(filtered.length === 1 && Number(filtered[0].StockQuantity) > 0) {
+                    addToNypCart(filtered[0].id);
+                    nypSearch.value = '';
+                    renderNypCatalog();
+                }
+            }
+        });
+    }
+    if(nypCatFilter) nypCatFilter.addEventListener('change', renderNypCatalog);
 
     const mUnit = document.getElementById('modalUnitType');
     if(mUnit) mUnit.addEventListener('change', updateModalPrice);
@@ -163,6 +218,29 @@ function setupDOMEventListeners() {
     const mEl = document.getElementById('addToCartModal');
     if(mEl) {
         mEl.addEventListener('hidden.bs.modal', () => { window.nypMode = false; });
+    }
+
+    const reportDateInput = document.getElementById('cashSalesReportDate');
+    const reportSellerInput = document.getElementById('cashSalesReportSeller');
+    const reportBarcodeInput = document.getElementById('cashSalesReportBarcode');
+    
+    if(reportDateInput) {
+        // Set default to today
+        reportDateInput.value = new Date().toISOString().split('T')[0];
+        reportDateInput.addEventListener('change', () => {
+            if (typeof window.renderCashSalesReport === 'function') window.renderCashSalesReport();
+        });
+    }
+    
+    if(reportSellerInput) {
+        reportSellerInput.addEventListener('change', () => {
+            if (typeof window.renderCashSalesReport === 'function') window.renderCashSalesReport();
+        });
+    }
+    if(reportBarcodeInput) {
+        reportBarcodeInput.addEventListener('input', () => {
+            if (typeof window.renderCashSalesReport === 'function') window.renderCashSalesReport();
+        });
     }
 }
 
@@ -277,7 +355,22 @@ window.addToCart = function(id) {
     currentModalProduct = prod;
     document.getElementById('modalProductId').value = id;
     document.getElementById('modalProductName').innerText = `Add ${prod.Product}`;
-    document.getElementById('modalUnitType').value = 'unit';
+    
+    // Dynamically filter unit types
+    const unitSelect = document.getElementById('modalUnitType');
+    const config = prod.config || {};
+    const unitName = prod.baseUnit || 'Unit';
+    
+    unitSelect.innerHTML = `<option value="unit">${unitName}</option>`;
+    if(config.allowCarton) {
+        unitSelect.innerHTML += `<option value="carton">Carton (${prod.cartonSize || 0})</option>`;
+        if(config.allowHalf) unitSelect.innerHTML += `<option value="half">Half Carton (${Math.floor((prod.cartonSize||0)/2)})</option>`;
+        if(config.allowQuarter) unitSelect.innerHTML += `<option value="quarter">Quarter Carton (${Math.floor((prod.cartonSize||0)/4)})</option>`;
+    }
+    if(config.allowPack) unitSelect.innerHTML += `<option value="pack">Pack (${prod.packSize || 0})</option>`;
+    if(config.allowDozen) unitSelect.innerHTML += `<option value="dozen">Dozen (12)</option>`;
+
+    unitSelect.value = 'unit';
     document.getElementById('modalQty').value = 1;
     document.getElementById('modalDiscount').value = 0;
     updateModalPrice();
@@ -291,15 +384,29 @@ window.addToCart = function(id) {
 window.updateModalPrice = function() {
     if(!currentModalProduct) return;
     const uType = document.getElementById('modalUnitType').value;
+    const prod = currentModalProduct;
+    const overrides = prod.overrides || {};
+    const basePrice = Number(prod.SellingPrice) || 0;
+    const cSize = Number(prod.cartonSize) || 0;
+    const pSize = Number(prod.packSize) || 0;
+    
     let rate = 0;
     
-    if(uType === 'carton') rate = Number(currentModalProduct.cartonSellingPrice) || 0;
-    else if(uType === 'dozen') rate = Number(currentModalProduct.pricePerDozen) || 0;
-    else if(uType === 'half') rate = Number(currentModalProduct.pricePerHalf) || 0;
-    else if(uType === 'quarter') rate = Number(currentModalProduct.pricePerQuarter) || 0;
-    else rate = Number(currentModalProduct.pricePerUnit) || Number(currentModalProduct.SellingPrice) || 0;
+    if(uType === 'carton') {
+        rate = overrides.cartonPrice || (basePrice * cSize);
+    } else if(uType === 'dozen') {
+        rate = overrides.dozenPrice || (basePrice * 12);
+    } else if(uType === 'half') {
+        rate = (overrides.cartonPrice ? (overrides.cartonPrice / 2) : (basePrice * Math.floor(cSize / 2)));
+    } else if(uType === 'quarter') {
+        rate = (overrides.cartonPrice ? (overrides.cartonPrice / 4) : (basePrice * Math.floor(cSize / 4)));
+    } else if(uType === 'pack') {
+        rate = overrides.packPrice || (basePrice * pSize);
+    } else {
+        rate = basePrice;
+    }
 
-    document.getElementById('modalPrice').value = rate > 0 ? rate : 'N/A';
+    document.getElementById('modalPrice').value = rate > 0 ? Math.round(rate) : 'N/A';
 };
 
 window.confirmAddToCart = function() {
@@ -325,12 +432,15 @@ window.confirmAddToCart = function() {
     } else {
         targetCart.push({
             id: currentModalProduct.id,
+            barcode: currentModalProduct.barcode || '',
             name: currentModalProduct.Product,
             price: price,
             qty: qty,
             discountPercent: disc,
             maxQty: Number(currentModalProduct.StockQuantity) || 0,
-            unitType: uType
+            unitType: uType,
+            packSize: Number(currentModalProduct.packSize) || 1,
+            cartonSize: Number(currentModalProduct.cartonSize) || 1
         });
     }
     
@@ -435,9 +545,13 @@ function renderCart() {
 
 // --- Submit Order ---
 async function submitOrderToCashier() {
-    if(cart.length === 0) return;
-    
     const btn = document.getElementById('submitOrderBtn');
+    
+    // Safety confirmation
+    const totalDue = cart.reduce((sum, c) => sum + (c.price * c.qty - (c.price * c.qty * c.discountPercent / 100)), 0);
+    const confirmed = confirm(`--- CONFIRM DISPATCH ---\n\nTotal Items: ${cart.length}\nTotal Amount: ₦${totalDue.toLocaleString()}\n\nAre you sure you want to send this order to the Cashier?`);
+    if (!confirmed) return;
+
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
     
@@ -761,33 +875,18 @@ window.processNypSale = async function() {
             if (sSnap.exists()) {
                 const pData = sSnap.val();
                 let actualQty = item.qty;
-                if(item.unitType === 'carton') actualQty = item.qty * (Number(pData.cartonSize) || 1);
+                const cSize = Number(pData.cartonSize) || 0;
+                const pSize = Number(pData.packSize) || 0;
+                
+                if(item.unitType === 'carton') actualQty = item.qty * cSize;
                 else if(item.unitType === 'dozen') actualQty = item.qty * 12;
-                else if(item.unitType === 'half') actualQty = item.qty * 6;
-                else if(item.unitType === 'quarter') actualQty = item.qty * 3;
+                else if(item.unitType === 'half') actualQty = item.qty * Math.floor(cSize / 2);
+                else if(item.unitType === 'quarter') actualQty = item.qty * Math.floor(cSize / 4);
+                else if(item.unitType === 'pack') actualQty = item.qty * pSize;
                 
-                const cartonSize = Number(pData.cartonSize) || 0;
-                let currentTotalUnits = Number(pData.StockQuantity) || 0;
-                
-                // If cartonSize is zero, it's just basic stock deduction.
-                if (cartonSize === 0) {
-                    const newTotal = Math.max(0, currentTotalUnits - actualQty);
-                    await update(ref(db, stockRefStr), { 
-                        StockQuantity: newTotal,
-                        unitQuantity: newTotal
-                    });
-                } else {
-                    // True deduction recalculating full cartons and remainder units
-                    const newTotalUnits = Math.max(0, currentTotalUnits - actualQty);
-                    const newCartonQty = Math.floor(newTotalUnits / cartonSize);
-                    const newUnitQty = newTotalUnits % cartonSize;
-                    
-                    await update(ref(db, stockRefStr), { 
-                        StockQuantity: newTotalUnits,
-                        cartonQuantity: newCartonQty,
-                        unitQuantity: newUnitQty
-                    });
-                }
+                const newTotalUnits = Math.max(0, (Number(pData.StockQuantity) || 0) - actualQty);
+                // Simplify: Just update StockQuantity, others are derived
+                await update(ref(db, stockRefStr), { StockQuantity: newTotalUnits });
             }
         }
 
@@ -876,12 +975,19 @@ window.nypCustomerChanged = function () {
 document.getElementById('nypForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btnProcessNyp');
-    btn.innerHTML = "Processing...";
-    btn.disabled = true;
-
+    
     const cId = document.getElementById('nypCustomer').value;
     const amt = Number(document.getElementById('nypAmountPaid').value) || 0;
     const cObj = customers.find(c => c.id === cId);
+
+    if (!cObj || amt <= 0) return;
+
+    // Safety confirmation
+    const confirmed = confirm(`--- CONFIRM NYP PAYMENT ---\n\nCustomer: ${cObj.name}\nAmount: ₦${amt.toLocaleString()}\n\nIs this correct? This will update the customer's debt balance immediately.`);
+    if (!confirmed) return;
+
+    btn.innerHTML = "Processing...";
+    btn.disabled = true;
 
     try {
         if (cObj) {
@@ -917,4 +1023,225 @@ document.getElementById('nypForm')?.addEventListener('submit', async (e) => {
         btn.disabled = false;
     }
 });
+
+
+// --- CashSales Report Logic ---
+window.renderCashSalesReport = function() {
+    const container = document.getElementById('cashSalesReportContainer');
+    const dateInput = document.getElementById('cashSalesReportDate');
+    const sellerInput = document.getElementById('cashSalesReportSeller');
+    
+    if (!container || !dateInput) return;
+
+    const selectedDate = dateInput.value;
+    const selectedSeller = sellerInput ? sellerInput.value : 'all';
+    const selectedBarcode = document.getElementById('cashSalesReportBarcode')?.value.toLowerCase().trim() || '';
+
+    if (!selectedDate) {
+        container.innerHTML = '<div class="text-center py-5 text-muted">Please select a date.</div>';
+        return;
+    }
+
+    // Filter transactions: we want actual completed cash/pos sales (not NYP Debt Payment) for the selected date
+    const sales = completedTransactions.filter(t => {
+        if (!t.date || !t.date.startsWith(selectedDate)) return false;
+        if (t.paymentMethod === 'NYP Debt Payment' || t.paymentMethod === 'Credit Account') return false;
+        
+        if (selectedSeller !== 'all' && t.sellerName !== selectedSeller) return false;
+        
+        // Barcode Filter
+        if (selectedBarcode) {
+            const hasItem = (t.items || []).some(item => (item.barcode || '').toLowerCase().includes(selectedBarcode));
+            if (!hasItem) return false;
+        }
+        
+        return true;
+    });
+
+    if (sales.length === 0) {
+        const staffMsg = selectedSeller === 'all' ? 'All Sales Staff' : selectedSeller;
+        container.innerHTML = `<div class="text-center py-5 text-muted">
+            <i class="fas fa-folder-open fa-3x mb-3 text-light"></i>
+            <h5>No Cash Sales found for ${staffMsg} on ${selectedDate}</h5>
+        </div>`;
+        return;
+    }
+
+    let html = '';
+    
+    // Sort descending by date/time
+    sales.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    sales.forEach(sale => {
+        const dObj = new Date(sale.date);
+        const stYear = dObj.getFullYear();
+        const stMonth = dObj.toLocaleString('default', { month: 'long' });
+        const stDate = dObj.toISOString().split('T')[0];
+        
+        const displayStaff = selectedSeller === 'all' ? 'All Sales Staff' : selectedSeller;
+        
+        // Header band similar to screenshot
+        html += `<div class="report-header-band d-flex align-items-center justify-content-center gap-2">
+            <div style="background:#fff; padding:5px; border-radius:4px; display:flex; align-items:center;">
+                <img src="../logo.png" style="max-height: 35px;">
+            </div>
+            <span>${displayStaff}, ${stDate}: Cash Sales Report</span>
+        </div>`;
+        
+        // Table Wrapper
+        html += `<div class="report-table-wrapper mb-4">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th colspan="2">Ref No</th>
+                        <th colspan="2">Customer Name</th>
+                        <th colspan="2">Sales Staff</th>
+                        <th>Year</th>
+                        <th>Month</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background:#fff; border-bottom:2px solid #0b70b5;">
+                        <td colspan="2" class="fw-bold text-primary">${sale.refNo || 'N/A'}</td>
+                        <td colspan="2" class="fw-bold">${toTitleCase(sale.customerName || 'Walk-in')}</td>
+                        <td colspan="2" class="fw-bold">${toTitleCase(sale.sellerName || 'Unknown')}</td>
+                        <td>${stYear}</td>
+                        <td>${stMonth}</td>
+                        <td>${stDate}</td>
+                    </tr>
+                    <tr style="background:#f8fbff; font-size:0.8rem; font-weight:bold; color:#555;">
+                        <td>S/N</td>
+                        <td colspan="2">Stock Name</td>
+                        <td>Qty</td>
+                        <td>Pack Size</td>
+                        <td>Price</td>
+                        <td>Total</td>
+                        <td>Discount</td>
+                        <td>Actual Total</td>
+                    </tr>`;
+                    
+        let totalSum = 0;
+        let saleItems = sale.items || [];
+        
+        if(saleItems.length === 0) {
+             html += `<tr><td colspan="9" class="text-center text-muted py-2">No itemized details available</td></tr>`;
+        } else {
+            saleItems.forEach((item, idx) => {
+                const itemQty = Number(item.qty) || 0;
+                const itemPrice = Number(item.price) || 0;
+                const itemDisc = Number(item.discountPercent) || 0;
+                
+                const baseTotal = itemQty * itemPrice;
+                const discAmt = baseTotal * (itemDisc / 100);
+                const actualTotal = baseTotal - discAmt;
+                
+                totalSum += actualTotal;
+                
+                html += `<tr>
+                    <td>${idx + 1}</td>
+                    <td colspan="2">${item.name || 'Unknown Item'}</td>
+                    <td>${itemQty} ${item.unitType ? item.unitType.toUpperCase() : 'UNIT'}</td>
+                    <td>${(item.unitType === 'pack' || item.packSize > 1) ? (item.packSize || '-') : '-'}</td>
+                    <td>${itemPrice.toLocaleString()}</td>
+                    <td>${baseTotal.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                    <td class="text-danger">${itemDisc}%</td>
+                    <td class="fw-bold text-success">${actualTotal.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                </tr>`;
+            });
+        }
+        
+        // Summary Footer for the transaction
+        html += `
+                    <tr class="report-summary-row">
+                        <td colspan="5"></td>
+                        <td class="text-end text-primary fw-bold" colspan="3">Total Sum:</td>
+                        <td class="text-success fw-bold">₦${totalSum.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+};
+
+// Also initial render on load if ready
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        if(typeof window.renderCashSalesReport === 'function' && document.getElementById('cashSalesReportDate')?.value) {
+             window.renderCashSalesReport();
+        }
+        if(typeof window.renderAllDebtorsReport === 'function') {
+             window.renderAllDebtorsReport();
+        }
+    }, 1500);
+});
+
+window.renderAllDebtorsReport = function() {
+    const container = document.getElementById('debtorsReportContainer');
+    if (!container) return;
+
+    const debtors = customers.filter(c => (Number(c.balanceOwed) || 0) > 0);
+    debtors.sort((a, b) => (Number(b.balanceOwed) || 0) - (Number(a.balanceOwed) || 0));
+
+    if (debtors.length === 0) {
+        container.innerHTML = '<div class="text-center py-5 text-muted">No outstanding debtors found.</div>';
+        return;
+    }
+
+    let html = `
+        <div class="report-header-band d-flex align-items-center justify-content-center gap-3">
+            <div style="background:#fff; padding:8px; border-radius:8px; display:flex; align-items:center;">
+                <img src="../logo.png" style="max-height: 45px;">
+            </div>
+            <span>Timson Bookshop - Comprehensive Debtors List</span>
+        </div>
+        <div class="report-table-wrapper">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>S/N</th>
+                        <th>Customer Name</th>
+                        <th>Contact info</th>
+                        <th>Credit Limit (₦)</th>
+                        <th>Outstanding Debt (₦)</th>
+                        <th>Last Action</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+    debtors.forEach((d, idx) => {
+        let lastDate = "Never";
+        if (d.transactions) {
+            const txns = Object.values(d.transactions).sort((a, b) => new Date(b.date) - new Date(a.date));
+            if (txns.length > 0) lastDate = new Date(txns[0].date).toLocaleDateString();
+        }
+
+        html += `
+            <tr>
+                <td>${idx + 1}</td>
+                <td class="fw-bold">${toTitleCase(d.name)}</td>
+                <td>${d.phone || d.email || 'N/A'}</td>
+                <td>${(Number(d.creditLimit) || 0).toLocaleString()}</td>
+                <td class="text-danger fw-bold">₦${(Number(d.balanceOwed)).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td>${lastDate}</td>
+            </tr>`;
+    });
+
+    const totalDebt = debtors.reduce((sum, d) => sum + (Number(d.balanceOwed) || 0), 0);
+
+    html += `
+                <tr class="report-summary-row">
+                    <td colspan="4" class="text-end text-primary fw-bold">Grand Total Debt:</td>
+                    <td class="text-danger fw-bold" colspan="2">₦${totalDebt.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    container.innerHTML = html;
+};
+
 

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimsonBookshop POS - Import Cost Finalizer</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../admin.css">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+        }
+        .import-calc-card {
+            border: none;
+            border-radius: 16px;
+            background: var(--glass-bg);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        .form-label { font-weight: 600; color: #495057; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .input-group-text { background: #f8f9fa; border-right: none; color: #6c757d; }
+        .form-control:focus { border-color: #4361ee; box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.1); }
+        
+        .expense-badge {
+            background: #fff;
+            border: 1px solid #eef2ff;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .product-input-table thead th {
+            background: #f8f9fa;
+            color: #6c757d;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            border: none;
+            padding: 12px;
+        }
+        
+        .product-input-table tbody td {
+            border-color: #f1f3f9;
+            padding: 8px;
+        }
+
+        .btn-add-row {
+            background: #eef2ff;
+            color: #4361ee;
+            border: 1px dashed #4361ee;
+            font-weight: 600;
+        }
+        .btn-add-row:hover { background: #4361ee; color: #fff; }
+
+        .suggested-price-box {
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .profit-badge { 
+            font-weight: 700; 
+            padding: 4px 10px; 
+            border-radius: 6px; 
+            font-size: 0.75rem;
+        }
+        .bg-success-light { background: #dcfce7; color: #166534; }
+        .bg-danger-light { background: #fee2e2; color: #991b1b; }
+
+        /* Print Styles */
+        @media print {
+            .sidebar, .top-navbar, .no-print, .btn, .btn-remove { display: none !important; }
+            .content { margin-left: 0 !important; padding: 0 !important; width: 100% !important; }
+            .card { border: 1px solid #eee !important; box-shadow: none !important; }
+            .print-header { display: block !important; }
+            table input { border: none !important; background: transparent !important; pointer-events: none; }
+        }
+        .print-header { display: none; }
+    </style>
+</head>
+
+<body>
+
+    <nav id="sidebar" class="sidebar">
+        <div class="sidebar-header text-center py-4">
+            <div class="sidebar-logo-box">
+                <img src="../../logo.png" alt="Timson Bookshop" class="sidebar-logo-img">
+            </div>
+        </div>
+        <ul class="list-unstyled components">
+            <li><a href="../admin-dashboard.html"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+            <li><a href="../inventory-management.html"><i class="fas fa-boxes"></i> Inventory</a></li>
+            <li><a href="../stock-control.html"><i class="fas fa-clipboard-check"></i> Stock Control</a></li>
+            <li class="active"><a href="import-finalizer.html"><i class="fas fa-calculator"></i> Import Finalizer</a></li>
+            <li><a href="../sales-reports.html"><i class="fas fa-file-invoice-dollar"></i> Sales Reports</a></li>
+            <li><a href="../customer-credit.html"><i class="fas fa-credit-card"></i> Customer Credit</a></li>
+            <li><a href="../employee-management.html"><i class="fas fa-users"></i> Staff Management</a></li>
+            <li><a href="../analytics.html"><i class="fas fa-chart-pie"></i> Analytics</a></li>
+            <li><a href="../settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+        </ul>
+    </nav>
+
+    <div id="content" class="content">
+        <nav class="navbar navbar-expand-lg navbar-light top-navbar no-print">
+            <div class="container-fluid">
+                <button type="button" id="sidebarCollapse" class="btn btn-light d-lg-none shadow-sm">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="d-flex ms-auto align-items-center">
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center user-profile" href="#" role="button" data-bs-toggle="dropdown">
+                            <div class="rounded-circle me-2" id="profilePics"></div>
+                            <span id="navAdminName">Admin</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                            <li><a id="logoutBtn" class="dropdown-item py-2 text-danger" href="#"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid py-4 px-lg-4">
+            <!-- Header section -->
+            <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Import Cost Finalizer</h3>
+                    <p class="text-muted small mb-0">Batch calculate landed costs and selling prices for multiple products</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-light shadow-sm" onclick="location.reload()"><i class="fas fa-sync-alt me-2"></i>Reset</button>
+                    <button class="btn btn-primary shadow-sm px-4" onclick="printReport()"><i class="fas fa-print me-2"></i>Print Batch Report</button>
+                </div>
+            </div>
+
+            <!-- Global Shipment Expenses -->
+            <div class="row g-4 mb-4 no-print">
+                <div class="col-lg-12">
+                    <div class="card import-calc-card p-4">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label text-primary"><i class="fas fa-dollar-sign me-1"></i> Exchange Rate ($1 = ₦)</label>
+                                <input type="number" id="exchangeRate" class="form-control form-control-lg fw-bold" value="1500" oninput="calculateImportCost()">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Shipping Cost (₦)</label>
+                                <input type="number" id="expShipping" class="form-control expense-input" value="0" oninput="calculateImportCost()">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Clearing Cost (₦)</label>
+                                <input type="number" id="expClearing" class="form-control expense-input" value="0" oninput="calculateImportCost()">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Transport Cost (₦)</label>
+                                <input type="number" id="expTransport" class="form-control expense-input" value="0" oninput="calculateImportCost()">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Total Expenses: <span class="text-primary" id="dispTotalExpenses">₦0.00</span></label>
+                                <div class="bg-light p-2 rounded small text-muted">
+                                    Expense Distribution: <strong id="dispExpPerPiece">₦0.00</strong> per piece
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Multi-Product Input Table -->
+            <div class="row no-print">
+                <div class="col-12">
+                    <div class="card import-calc-card overflow-hidden">
+                        <div class="table-responsive">
+                            <table class="table product-input-table mb-0" id="productEntryTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%">Product Details</th>
+                                    <th style="width: 10%">USD Price</th>
+                                    <th style="width: 10%">CTN Size</th>
+                                    <th style="width: 10%">CTNS</th>
+                                    <th style="width: 35%">Selling Prices (CTN, DZN, 1/2, PC)</th>
+                                    <th style="width: 15%">Profit / PC</th>
+                                    <th style="width: 50px"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="productRows">
+                                <!-- Dynamic Rows -->
+                            </tbody>
+                            </table>
+                        </div>
+                        <div class="p-3 border-top bg-light">
+                            <button class="btn btn-add-row px-4 py-2 rounded-3 shadow-sm" onclick="addProductRow()">
+                                <i class="fas fa-plus-circle me-2"></i> Add Another Product
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Summary Cards (Visible in Print) -->
+            <div class="row g-4 mt-2">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm p-4 h-100 text-center">
+                        <h6 class="text-muted small fw-bold text-uppercase mb-2">Total Batch Quantity</h6>
+                        <h3 class="fw-bold mb-0" id="grandTotalPieces">0</h3>
+                        <small class="text-muted">Total Pieces in Shipment</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm p-4 h-100 text-center">
+                        <h6 class="text-muted small fw-bold text-uppercase mb-2">Pre-Expense Cost</h6>
+                        <h3 class="fw-bold mb-0" id="grandGoodsCost">₦0.00</h3>
+                        <small class="text-muted">Cost of Goods Only</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm p-4 h-100 text-center">
+                        <h6 class="text-muted small fw-bold text-uppercase mb-2">Operational Expenses</h6>
+                        <h3 class="fw-bold text-danger mb-0" id="grandExpenses">₦0.00</h3>
+                        <small class="text-muted">Landed Cost Adjustments</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm p-4 h-100 text-center bg-primary text-white" style="background: var(--primary-gradient) !important">
+                        <h6 class="text-white-50 small fw-bold text-uppercase mb-2 text-white">Grand Total Investment</h6>
+                        <h3 class="fw-bold mb-0 text-white" id="grandFinalCost">₦0.00</h3>
+                        <small class="text-white-50">Landed Value for Batch</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Analysis Table (Print Friendly) -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm p-4">
+                        <div class="print-header text-center mb-4">
+                            <img src="../../logo.png" style="max-height: 60px;" class="mb-3">
+                            <h4 class="fw-bold mb-1">Timson Bookshop & Stationery Store</h4>
+                            <p class="text-muted small mb-0">Import Batch Landed Cost Reconciliation</p>
+                            <div class="small mt-2" id="printBatchDate"></div>
+                            <hr>
+                        </div>
+                        
+                        <h5 class="fw-bold mb-3 no-print">Landed Cost Analysis Report</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle border-top">
+                                <thead class="table-light">
+                                    <tr class="small text-uppercase">
+                                        <th>Product / Model</th>
+                                        <th class="text-center">Tot Pieces</th>
+                                        <th class="text-end">Base Cost</th>
+                                        <th class="text-end">Real Landed Cost</th>
+                                        <th class="text-end">Suggested Selling (30%)</th>
+                                        <th class="text-end">Actual Selling</th>
+                                        <th class="text-center">Profit / PC</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="analysisRows">
+                                    <!-- Dynamic rows filled by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap & Firebase -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="import-finalizer.js"></script>
+
+</body>
+</html>
