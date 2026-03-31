@@ -1,0 +1,19 @@
+{
+  "name": "timson-pos-api",
+  "version": "1.0.0",
+  "description": "Standalone Node.js API for Timson Bookshop POS",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^11.8.0",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
