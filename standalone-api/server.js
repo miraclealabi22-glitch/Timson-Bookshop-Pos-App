@@ -34,20 +34,7 @@ const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json());
 
-// Security Middleware: API Key Check
-const authenticate = (req, res, next) => {
-    const apiKey = req.headers["x-api-key"];
-    const validApiKey = process.env.API_KEY || "TIMSON_BOT_2026_SECURE_TOKEN";
-
-    console.log(`[Request] ${req.method} ${req.url} | API Key Received: ${apiKey ? "YES" : "NO"}`);
-
-    if (!apiKey || apiKey !== validApiKey) {
-        console.warn(`[Unauthorized] Access denied for ${req.url} (Invalid or missing API Key)`);
-        return res.status(401).json({ error: "Unauthorized: Invalid API Key" });
-    }
-    next();
-};
-
+// --- Endpoints ---
 // Health Check (PUBLIC)
 app.get("/status", (req, res) => {
     res.json({ 
