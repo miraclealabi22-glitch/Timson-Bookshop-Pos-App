@@ -125,7 +125,8 @@
         } catch (err) {
             messages.pop();
             console.error("Bot Error:", err);
-            messages.push({ role: 'bot', text: `⚠️ Connection Error: ${err.message}. Make sure your backend server is running on ${API_BASE}.` });
+            const displayErr = err.message || "Unknown Error";
+            messages.push({ role: 'bot', text: `⚠️ ${displayErr}. (Check your Render environment variables if this persists).` });
         }
         updateMessages();
     }

@@ -26,7 +26,9 @@ admin.initializeApp({
   databaseURL: "https://posapp-ed05a-default-rtdb.firebaseio.com"
 });
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const genAI_Key = process.env.GEMINI_API_KEY || "";
+console.log(`[Init] Gemini API Key present: ${genAI_Key ? "YES" : "NO"} ${genAI_Key ? "(Starts with: " + genAI_Key.substring(0, 4) + "...)" : ""}`);
+const genAI = new GoogleGenerativeAI(genAI_Key);
 const db = admin.database();
 const app = express();
 app.use(cors({ origin: true }));
