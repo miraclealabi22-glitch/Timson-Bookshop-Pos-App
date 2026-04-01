@@ -153,27 +153,46 @@ RULES:
         const response = await result.response;
         res.json({ success: true, reply: response.text() });
     } catch (error) {
-        console.error("AI Error:", error);
-        res.status(500).json({ success: false, error: "AI Assistant is resting. Try again in a bit." });
+        console.error("AI Error Details:", error);
+        let errorHint = "AI Assistant is resting. Try again in a bit.";
+        
+        if (!process.env.GEMINI_API_KEY) {
+            errorHint = "Missing GEMINI_API_KEY. Please set it in Render Env vars.";
+        } else if (error.message && error.message.includes("API key not valid")) {
+            errorHint = "Invalid GEMINI_API_KEY. Please check Google AI Studio.";
+        } else if (error.message && error.message.includes("quota")) {
+            errorHint = "Gemini API quota exceeded. Please try again later.";
+        }
+        
+        res.status(500).json({ 
+            success: false, 
+            error: errorHint,
+            debug: error.message 
+        });
     }
 });
 
 // 2. Helper to fetch dashboard context
 async function getDashboardContext() {
-    const [stock, txns, customers] = await Promise.all([
-        db.ref("stockRef").once("value"),
-        db.ref("transactionsRef").limitToLast(5).once("value"),
-        db.ref("customersRef").once("value")
-    ]);
+    try {
+        const [stock, txns, customers] = await Promise.all([
+            db.ref("stockRef").once("value"),
+            db.ref("transactionsRef").limitToLast(5).once("value"),
+            db.ref("customersRef").once("value")
+        ]);
 
-    const products = stock.val() ? Object.values(stock.val()) : [];
-    const lowStock = products.filter(p => Number(p.StockQuantity) <= (Number(p.ReorderLevel) || 10));
+        const products = stock.val() ? Object.values(stock.val()) : [];
+        const lowStock = products.filter(p => Number(p.StockQuantity) <= (Number(p.ReorderLevel) || 10));
 
-    return {
-        lowStock: lowStock.map(p => ({ name: p.Product, qty: p.StockQuantity })),
-        recentTxns: txns.val() ? Object.values(txns.val()) : [],
-        totalCustomers: customers.val() ? Object.keys(customers.val()).length : 0
-    };
+        return {
+            lowStock: lowStock.map(p => ({ name: p.Product, qty: p.StockQuantity })),
+            recentTxns: txns.val() ? Object.values(txns.val()) : [],
+            totalCustomers: customers.val() ? Object.keys(customers.val()).length : 0
+        };
+    } catch (e) {
+        console.error("Firebase Context Error:", e);
+        return { error: "Could not fetch store data. Check Firebase credentials in Render." };
+    }
 }
 
 // 3. Measurements Endpoint
