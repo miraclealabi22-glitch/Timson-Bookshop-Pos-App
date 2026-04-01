@@ -48,9 +48,35 @@ const authenticate = (req, res, next) => {
     next();
 };
 
+// Health Check (PUBLIC)
+app.get("/status", (req, res) => {
+    res.json({ 
+        status: "online", 
+        timestamp: new Date().toISOString(),
+        service: "Timson POS Standalone API"
+    });
+});
+
+app.get("/", (req, res) => res.json({ status: "API is live!", timestamp: new Date().toISOString() }));
+
+// --- SECURITY MIDDLEWARE ---
+// Everything below this line requires x-api-key
+const authenticate = (req, res, next) => {
+    const apiKey = req.headers["x-api-key"];
+    const validApiKey = process.env.API_KEY || "TIMSON_BOT_2026_SECURE_TOKEN";
+
+    console.log(`[Request] ${req.method} ${req.url} | API Key Received: ${apiKey ? "YES" : "NO"}`);
+
+    if (!apiKey || apiKey !== validApiKey) {
+        console.warn(`[Unauthorized] Access denied for ${req.url} (Invalid or missing API Key)`);
+        return res.status(401).json({ error: "Unauthorized: Invalid API Key" });
+    }
+    next();
+};
+
 app.use(authenticate);
 
-// --- Endpoints ---
+// --- Protected Endpoints ---
 
 app.get("/products", async (req, res) => {
     try {
@@ -219,16 +245,7 @@ app.post("/measurements/:customerId", async (req, res) => {
     }
 });
 
-// Health Check
-app.get("/status", (req, res) => {
-    res.json({ 
-        status: "online", 
-        timestamp: new Date().toISOString(),
-        service: "Timson POS Standalone API"
-    });
-});
-
-app.get("/", (req, res) => res.json({ status: "API is live!", timestamp: new Date().toISOString() }));
+// Health check moved above security middleware
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
