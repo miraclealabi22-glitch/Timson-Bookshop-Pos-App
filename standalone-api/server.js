@@ -121,7 +121,7 @@ app.post("/chat", async (req, res) => {
     if (!message) return res.status(400).json({ error: "Missing message" });
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         
         // Fetch dashboard context
         const context = await getDashboardContext();
@@ -143,8 +143,8 @@ RULES:
 
         const chat = model.startChat({
             history: [
-                { role: "user", parts: systemPrompt },
-                { role: "model", parts: "Acknowledged. I am the Timson Luxury Fashion Concierge. How can I assist with your fashion operations today?" },
+                { role: "user", parts: [{ text: systemPrompt }] },
+                { role: "model", parts: [{ text: "Acknowledged. I am the Timson POS Assistant. How can I help with your dashboard operations today?" }] },
                 ...(history || [])
             ]
         });
