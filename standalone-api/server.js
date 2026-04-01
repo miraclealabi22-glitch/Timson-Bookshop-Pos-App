@@ -48,10 +48,11 @@ app.get("/", (req, res) => res.json({ status: "API is live!", timestamp: new Dat
 
 app.get("/models", async (req, res) => {
     try {
-        const response = await genAI.getGenerativeModel({ model: "gemini-1.5-flash" }).listModels();
-        // Wait, listModels is actually on the genAI object usually or require a different call
-        // Actually in v0.13.0 it might be different. Let's try the most likely path:
-        res.json({ success: true, message: "Please check Render logs for listed models or check Google documentation. I am listing them now..." });
+        // listModels is a top-level method on the genAI instance
+        const response = await genAI.listModels();
+        // Return only the names to keep it clean
+        const modelNames = response.models.map(m => m.name);
+        res.json({ success: true, models: modelNames });
     } catch (e) {
         res.json({ success: false, error: e.message });
     }
