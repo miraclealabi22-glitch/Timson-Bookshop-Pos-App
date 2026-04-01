@@ -43,10 +43,19 @@ app.get("/status", (req, res) => {
         service: "Timson POS Standalone API"
     });
 });
-
 app.get("/", (req, res) => res.json({ status: "API is live!", timestamp: new Date().toISOString() }));
 
-app.get("/", (req, res) => res.json({ status: "API is live!", timestamp: new Date().toISOString() }));
+app.get("/models", async (req, res) => {
+    try {
+        const url = `https://generativelanguage.googleapis.com/v1/models?key=${process.env.GEMINI_API_KEY}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        const modelNames = data.models ? data.models.map(m => m.name) : [];
+        res.json({ success: true, models: modelNames, debug: data });
+    } catch (e) {
+        res.json({ success: false, error: e.message });
+    }
+});
 
 // --- SECURITY MIDDLEWARE ---
 // Everything below this line requires x-api-key
