@@ -156,11 +156,17 @@ RULES:
 4. Use the provided context to answer specific questions about stock levels and recent sales.
         `;
 
+        // Map history to the format Gemini expects (role and parts)
+        const formatHistory = (history || []).map(item => ({
+            role: item.role === "bot" ? "model" : item.role,
+            parts: [{ text: item.content || item.message || "" }]
+        }));
+
         const chat = model.startChat({
             history: [
                 { role: "user", parts: [{ text: systemPrompt }] },
                 { role: "model", parts: [{ text: "Acknowledged. I am the Timson POS Assistant. How can I help with your dashboard operations today?" }] },
-                ...(history || [])
+                ...formatHistory
             ]
         });
 
