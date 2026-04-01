@@ -115,8 +115,9 @@
             });
 
             if (!res.ok) {
-                const errData = await res.json().catch(() => ({ error: "Server error (" + res.status + ")" }));
-                throw new Error(errData.error || "Server responded with status " + res.status);
+                const errData = await res.json().catch(() => ({ error: "Cloud connection failed" }));
+                const detail = errData.debug ? ` | Details: ${errData.debug}` : "";
+                throw new Error((errData.error || "Server Error") + detail);
             }
 
             const data = await res.json();
