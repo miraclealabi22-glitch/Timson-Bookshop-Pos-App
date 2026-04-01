@@ -126,19 +126,19 @@ RULES:
 
         // Map history to the format Gemini expects (role and parts)
         const formatHistory = (history || []).map(item => ({
-            role: item.role === "bot" ? "model" : item.role,
-            parts: [{ text: item.content || item.message || "" }]
+            role: (item.role === "bot" || item.role === "ai" || item.role === "assistant") ? "model" : "user",
+            parts: [{ text: String(item.content || item.message || "") }]
         }));
 
-        const chat = model.startChat({
-            history: [
-                { role: "user", parts: [{ text: systemPrompt }] },
-                { role: "model", parts: [{ text: "Acknowledged. I am the Timson POS Assistant. How can I help with your dashboard operations today?" }] },
-                ...formatHistory
-            ]
-        });
+        // Use generateContent instead of startChat for better stability
+        const contents = [
+            { role: "user", parts: [{ text: systemPrompt }] },
+            { role: "model", parts: [{ text: "Acknowledged. I am the Timson POS Assistant. Ready to help." }] },
+            ...formatHistory,
+            { role: "user", parts: [{ text: message }] }
+        ];
 
-        const result = await chat.sendMessage(message);
+        const result = await model.generateContent({ contents });
         const response = await result.response;
         res.json({ success: true, reply: response.text() });
     } catch (error) {
