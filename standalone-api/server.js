@@ -46,17 +46,7 @@ app.get("/status", (req, res) => {
 
 app.get("/", (req, res) => res.json({ status: "API is live!", timestamp: new Date().toISOString() }));
 
-app.get("/models", async (req, res) => {
-    try {
-        // listModels is a top-level method on the genAI instance
-        const response = await genAI.listModels();
-        // Return only the names to keep it clean
-        const modelNames = response.models.map(m => m.name);
-        res.json({ success: true, models: modelNames });
-    } catch (e) {
-        res.json({ success: false, error: e.message });
-    }
-});
+app.get("/", (req, res) => res.json({ status: "API is live!", timestamp: new Date().toISOString() }));
 
 // --- SECURITY MIDDLEWARE ---
 // Everything below this line requires x-api-key
@@ -182,9 +172,24 @@ RULES:
             { role: "user", parts: [{ text: message }] }
         ];
 
-        const result = await model.generateContent({ contents });
-        const response = await result.response;
-        res.json({ success: true, reply: response.text() });
+        // Attempt with gemini-1.5-flash first, fallback to gemini-pro if 404
+        let responseText = "";
+        try {
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const result = await model.generateContent({ contents });
+            responseText = (await result.response).text();
+        } catch (e) {
+            if (e.message && (e.message.includes("404") || e.message.includes("not found"))) {
+                console.log("⚠️ gemini-1.5-flash not found, falling back to gemini-pro...");
+                const modelFallback = genAI.getGenerativeModel({ model: "gemini-pro" });
+                const resultFallback = await modelFallback.generateContent({ contents });
+                responseText = (await resultFallback.response).text();
+            } else {
+                throw e; // Rethrow other errors (quota, auth, etc)
+            }
+        }
+        
+        res.json({ success: true, reply: responseText });
     } catch (error) {
         console.error("AI Error Details:", error);
         let errorHint = "AI Assistant is resting. Try again in a bit.";

@@ -138,9 +138,24 @@ RULES:
             { role: "user", parts: [{ text: message }] }
         ];
 
-        const result = await model.generateContent({ contents });
-        const response = await result.response;
-        res.json({ success: true, reply: response.text() });
+        // Attempt with gemini-1.5-flash first, fallback to gemini-pro if 404
+        let responseText = "";
+        try {
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const result = await model.generateContent({ contents });
+            responseText = (await result.response).text();
+        } catch (e) {
+            if (e.message && (e.message.includes("404") || e.message.includes("not found"))) {
+                console.log("⚠️ gemini-1.5-flash not found, falling back to gemini-pro...");
+                const modelFallback = genAI.getGenerativeModel({ model: "gemini-pro" });
+                const resultFallback = await modelFallback.generateContent({ contents });
+                responseText = (await resultFallback.response).text();
+            } else {
+                throw e; // Rethrow other errors (quota, auth, etc)
+            }
+        }
+        
+        res.json({ success: true, reply: responseText });
     } catch (error) {
         console.error("AI Error:", error);
         res.status(500).json({ success: false, error: "AI Assistant is resting. Run 'firebase functions:config:set gemini.key=YOUR_KEY' if this persists." });
