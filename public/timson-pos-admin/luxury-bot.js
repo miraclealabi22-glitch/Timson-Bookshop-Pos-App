@@ -5,9 +5,8 @@
 
 (function initLuxuryBot() {
     // TIMSON POS AI CONFIGURATION
-    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-        ? "http://localhost:3000" // Local fallback
-        : "https://timson-bookshop-pos-app-3.onrender.com"; // LIVE RENDER URL
+    // Using the LIVE Render URL directly to ensure accessibility everywhere
+    const API_BASE = "https://timson-bookshop-pos-app-3.onrender.com"; 
     const API_KEY = "TIMSON_BOT_2026_SECURE_TOKEN";
 
     // --- State ---
