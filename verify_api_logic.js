@@ -1,10 +1,10 @@
 const fetch = require('node-fetch'); // This would be available in a real node environment
 
-const API_URL = "http://localhost:5001/posapp-ed05a/us-central1/api";
-const API_KEY = "TIMSON_SECRET_KEY_123";
+const API_URL = process.env.API_URL || "http://localhost:3000"; // Standalone API default port
+const API_KEY = process.env.API_KEY || "TIMSON_BOT_2026_SECURE_TOKEN";
 
 async function testApi() {
-    console.log("Testing Firebase API Endpoints...");
+    console.log(`Testing Timson POS API at: ${API_URL}...`);
 
     // 1. Health Check
     try {
@@ -13,8 +13,9 @@ async function testApi() {
         });
         const data = await res.json();
         console.log("Status Check:", data.status === "online" ? "PASSED" : "FAILED");
+        if (data.service) console.log(`Service Name: ${data.service}`);
     } catch (e) {
-        console.log("Status Check: FAILED (Server not running)");
+        console.log("Status Check: FAILED (Server not reachable or /status missing)");
     }
 
     // 2. Unauthorized Check

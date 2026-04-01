@@ -13,6 +13,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="admin.css">
+    <!-- Luxury AI Bot CSS -->
+    <link rel="stylesheet" href="luxury-bot.css">
+    <!-- Google Fonts for Luxury Bot -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <style>
         .status-indicator {
             width: 10px;
@@ -98,6 +102,7 @@
             <li><a href="customer-credit.html"><i class="fas fa-credit-card"></i> Customer Credit</a></li>
             <li><a href="employee-management.html"><i class="fas fa-users"></i> Employees</a></li>
             <li><a href="analytics.html"><i class="fas fa-chart-pie"></i> Analytics</a></li>
+            <li><a href="#" id="luxuryAiTab" onclick="window.toggleLuxuryBot(); return false;"><i class="fas fa-robot text-warning"></i> AI Assistant</a></li>
             <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
         </ul>
     </nav>
@@ -566,6 +571,8 @@ Update Product
     <script src="admin.js"></script>
     <!-- Inventory Specific JS -->
     <script src="inventory.js" type="module"></script>
+    <!-- Luxury AI Bot JS -->
+    <script src="luxury-bot.js"></script>
     
 </body>
 

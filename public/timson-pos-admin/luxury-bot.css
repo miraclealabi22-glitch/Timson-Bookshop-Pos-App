@@ -1,0 +1,205 @@
+/* Synchronized Dashboard AI Bot Styles */
+:root {
+    --pos-primary: #4361ee;
+    --pos-primary-hover: #3a53d0;
+    --pos-dark: #111827;
+    --pos-text: #1e293b;
+    --pos-text-muted: #64748b;
+    --pos-bg: #f8f9fa;
+    --pos-white: #ffffff;
+    --pos-border: #e2e8f0;
+    --pos-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    --pos-font: 'Inter', sans-serif;
+}
+
+#lux-bot-container {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 10000;
+    font-family: var(--pos-font);
+}
+
+/* Trigger Button - Matching Sidebar/Primary buttons */
+.lux-bot-trigger {
+    width: 60px;
+    height: 60px;
+    background: var(--pos-primary);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--pos-shadow);
+    transition: all 0.3s ease;
+}
+
+.lux-bot-trigger:hover {
+    background: var(--pos-primary-hover);
+    transform: translateY(-3px);
+}
+
+.lux-bot-trigger i {
+    color: var(--pos-white);
+    font-size: 24px;
+}
+
+/* Chat Window - Matching Dashboard Cards */
+.lux-chat-window {
+    position: absolute;
+    bottom: 75px;
+    right: 0;
+    width: 380px;
+    height: 550px;
+    background: var(--pos-white);
+    border: 1px solid var(--pos-border);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+    animation: posIn 0.3s ease-out;
+}
+
+@keyframes posIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header - Matching Top Navbar/Sidebar style */
+.lux-chat-header {
+    background: var(--pos-dark);
+    padding: 20px;
+    color: var(--pos-white);
+    display: flex;
+    flex-direction: column;
+}
+
+.lux-chat-header h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--pos-white);
+}
+
+.lux-chat-header p {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: var(--pos-text-muted);
+    font-weight: 400;
+}
+
+/* Messages */
+.lux-chat-messages {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    background: #fdfdfd;
+}
+
+.lux-msg {
+    max-width: 80%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.lux-msg.bot {
+    align-self: flex-start;
+    background: var(--pos-bg);
+    color: var(--pos-text);
+    border: 1px solid var(--pos-border);
+}
+
+.lux-msg.user {
+    align-self: flex-end;
+    background: var(--pos-primary);
+    color: var(--pos-white);
+}
+
+/* Quick Actions - Matching Secondary Buttons */
+.lux-chat-actions {
+    padding: 10px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: var(--pos-white);
+    border-top: 1px solid var(--pos-border);
+}
+
+.lux-action-btn {
+    background: #fff;
+    border: 1px solid var(--pos-border);
+    color: var(--pos-text-secondary);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.lux-action-btn:hover {
+    background: var(--pos-bg);
+    border-color: var(--pos-primary);
+    color: var(--pos-primary);
+}
+
+/* Input Area */
+.lux-chat-input-area {
+    padding: 15px 20px 20px;
+    background: var(--pos-white);
+    border-top: 1px solid var(--pos-border);
+}
+
+.lux-input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.lux-chat-input {
+    flex: 1;
+    border: 1px solid var(--pos-border);
+    background: var(--pos-bg);
+    border-radius: 8px;
+    padding: 10px 15px;
+    font-size: 14px;
+    outline: none;
+}
+
+.lux-chat-input:focus {
+    border-color: var(--pos-primary);
+    background: #fff;
+}
+
+.lux-send-btn {
+    background: var(--pos-primary);
+    color: var(--pos-white);
+    border: none;
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.lux-send-btn:hover {
+    background: var(--pos-primary-hover);
+}
+
+/* Mobile */
+@media (max-width: 500px) {
+    .lux-chat-window {
+        width: calc(100vw - 40px);
+        height: 70vh;
+        bottom: 70px;
+    }
+}

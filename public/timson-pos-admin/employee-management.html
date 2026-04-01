@@ -11,8 +11,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="admin.css">
+    <!-- Luxury AI Bot Fonts & CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="luxury-bot.css">
 </head>
 
 <body>
@@ -31,6 +32,7 @@
             <li><a href="sales-reports.html"><i class="fas fa-file-invoice-dollar"></i> Sales Reports</a></li>
             <li><a href="customer-credit.html"><i class="fas fa-credit-card"></i> Customer Credit</a></li>
             <li class="active"><a href="employee-management.html"><i class="fas fa-users"></i> Employees</a></li>
+            <li><a href="#" id="luxuryAiTab" onclick="window.toggleLuxuryBot(); return false;"><i class="fas fa-robot text-warning"></i> AI Assistant</a></li>
             <li><a href="analytics.html"><i class="fas fa-chart-pie"></i> Analytics</a></li>
             <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
         </ul>
@@ -165,6 +167,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="admin.js"></script>
     <script type="module" src="employee-management.js"></script>
+    <!-- Luxury AI Bot JS -->
+    <script src="luxury-bot.js"></script>
 </body>
 
 </html>

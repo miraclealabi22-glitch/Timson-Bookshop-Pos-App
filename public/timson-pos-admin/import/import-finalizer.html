@@ -73,12 +73,21 @@
             border-radius: 6px; 
             font-size: 0.75rem;
         }
+        .unit-price-box { position: relative; margin-bottom: 5px; }
+        .sug-label { 
+            display: block; 
+            font-size: 0.6rem; 
+            margin-top: 2px;
+            font-weight: 600;
+        }
         .bg-success-light { background: #dcfce7; color: #166534; }
         .bg-danger-light { background: #fee2e2; color: #991b1b; }
-
+        
         /* Print Styles */
         @media print {
             .sidebar, .top-navbar, .no-print, .btn, .btn-remove { display: none !important; }
+            #grandExpectedProfit { background-color: #198754 !important; color: white !important; }
+            .bg-success { background-color: #198754 !important; color: white !important; }
             .content { margin-left: 0 !important; padding: 0 !important; width: 100% !important; }
             .card { border: 1px solid #eee !important; box-shadow: none !important; }
             .print-header { display: block !important; }
@@ -151,22 +160,18 @@
                                 <label class="form-label text-primary"><i class="fas fa-dollar-sign me-1"></i> Exchange Rate ($1 = ₦)</label>
                                 <input type="number" id="exchangeRate" class="form-control form-control-lg fw-bold" value="1500" oninput="calculateImportCost()">
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Shipping Cost (₦)</label>
-                                <input type="number" id="expShipping" class="form-control expense-input" value="0" oninput="calculateImportCost()">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Clearing Cost (₦)</label>
-                                <input type="number" id="expClearing" class="form-control expense-input" value="0" oninput="calculateImportCost()">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Transport Cost (₦)</label>
-                                <input type="number" id="expTransport" class="form-control expense-input" value="0" oninput="calculateImportCost()">
+                            <div class="col-md-3">
+                                <label class="form-label text-success"><i class="fas fa-chart-line me-1"></i> Desired Profit Margin (%)</label>
+                                <input type="number" id="profitMargin" class="form-control form-control-lg fw-bold text-success" value="30" oninput="calculateImportCost()" placeholder="e.g. 30">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label fw-bold">Total Expenses: <span class="text-primary" id="dispTotalExpenses">₦0.00</span></label>
-                                <div class="bg-light p-2 rounded small text-muted">
-                                    Expense Distribution: <strong id="dispExpPerPiece">₦0.00</strong> per piece
+                                <label class="form-label">Total Expenses (₦) <span class="text-muted small">(Shipping, Clearing, etc.)</span></label>
+                                <input type="number" id="totalExpenses" class="form-control expense-input form-control-lg" value="0" placeholder="Combined Expenses" oninput="calculateImportCost()">
+                            </div>
+                            <div class="col-md-3 text-end">
+                                <div class="bg-light p-3 rounded-3 border">
+                                    <span class="text-muted small d-block">Landed Cost Adjustment</span>
+                                    <strong id="dispExpPerPiece" class="h4 mb-0 text-primary">₦0.00</strong> <span class="small text-muted">/ PC</span>
                                 </div>
                             </div>
                         </div>
@@ -179,15 +184,19 @@
                 <div class="col-12">
                     <div class="card import-calc-card overflow-hidden">
                         <div class="table-responsive">
-                            <table class="table product-input-table mb-0" id="productEntryTable">
+                            <table class="table product-input-table mb-0 align-middle" id="productEntryTable">
                             <thead>
                                 <tr>
-                                    <th style="width: 20%">Product Details</th>
-                                    <th style="width: 10%">USD Price</th>
-                                    <th style="width: 10%">CTN Size</th>
-                                    <th style="width: 10%">CTNS</th>
-                                    <th style="width: 35%">Selling Prices (CTN, DZN, 1/2, PC)</th>
-                                    <th style="width: 15%">Profit / PC</th>
+                                    <th style="min-width: 200px">Product / Model</th>
+                                    <th style="width: 80px">CTNS</th>
+                                    <th style="width: 90px">PCS/CTN</th>
+                                    <th style="width: 100px">USD/PC</th>
+                                    <th style="width: 100px">USD/CTN</th>
+                                    <th style="width: 100px">Tot PCS</th>
+                                    <th style="width: 120px">Tot USD</th>
+                                    <th style="width: 120px" class="bg-light">Landed/PC</th>
+                                    <th style="min-width: 320px">Selling Prices (CTN, PK, DZN, PC)</th>
+                                    <th style="width: 150px">Profit / Unit</th>
                                     <th style="width: 50px"></th>
                                 </tr>
                             </thead>
@@ -197,8 +206,8 @@
                             </table>
                         </div>
                         <div class="p-3 border-top bg-light">
-                            <button class="btn btn-add-row px-4 py-2 rounded-3 shadow-sm" onclick="addProductRow()">
-                                <i class="fas fa-plus-circle me-2"></i> Add Another Product
+                            <button class="btn btn-primary px-4 py-2 rounded-3 shadow-sm me-2" onclick="addProductRow()">
+                                <i class="fas fa-plus-circle me-2"></i> Add Product Row
                             </button>
                         </div>
                     </div>
@@ -207,32 +216,39 @@
 
             <!-- Result Summary Cards (Visible in Print) -->
             <div class="row g-4 mt-2">
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="card border-0 shadow-sm p-4 h-100 text-center">
-                        <h6 class="text-muted small fw-bold text-uppercase mb-2">Total Batch Quantity</h6>
-                        <h3 class="fw-bold mb-0" id="grandTotalPieces">0</h3>
-                        <small class="text-muted">Total Pieces in Shipment</small>
+                        <h6 class="text-muted small fw-bold text-uppercase mb-2">Total USD</h6>
+                        <h3 class="fw-bold mb-0" id="grandTotalUSD">$0.00</h3>
+                        <small class="text-muted small" id="dispExRateSummary">Rate: @ 1,500</small>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="card border-0 shadow-sm p-4 h-100 text-center">
-                        <h6 class="text-muted small fw-bold text-uppercase mb-2">Pre-Expense Cost</h6>
+                        <h6 class="text-muted small fw-bold text-uppercase mb-2">Goods Cost (₦)</h6>
                         <h3 class="fw-bold mb-0" id="grandGoodsCost">₦0.00</h3>
-                        <small class="text-muted">Cost of Goods Only</small>
+                        <small class="text-muted small">Pre-Expenses</small>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="card border-0 shadow-sm p-4 h-100 text-center">
-                        <h6 class="text-muted small fw-bold text-uppercase mb-2">Operational Expenses</h6>
+                        <h6 class="text-muted small fw-bold text-uppercase mb-2">Expenses (₦)</h6>
                         <h3 class="fw-bold text-danger mb-0" id="grandExpenses">₦0.00</h3>
-                        <small class="text-muted">Landed Cost Adjustments</small>
+                        <small class="text-muted small">Shippping & Clearing</small>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card border-0 shadow-sm p-4 h-100 text-center bg-primary text-white" style="background: var(--primary-gradient) !important">
-                        <h6 class="text-white-50 small fw-bold text-uppercase mb-2 text-white">Grand Total Investment</h6>
+                        <h6 class="text-white-50 small fw-bold text-uppercase mb-2">Grand Total Cost</h6>
                         <h3 class="fw-bold mb-0 text-white" id="grandFinalCost">₦0.00</h3>
-                        <small class="text-white-50">Landed Value for Batch</small>
+                        <small class="text-white-50">Landed Investment</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm p-4 h-100 text-center">
+                        <h6 class="text-muted small fw-bold text-uppercase mb-2">Batch Summary</h6>
+                        <h3 class="fw-bold mb-0" id="grandTotalPieces">0</h3>
+                        <small class="text-muted small">Total Pieces Across All Items</small>
                     </div>
                 </div>
             </div>
@@ -249,18 +265,18 @@
                             <hr>
                         </div>
                         
-                        <h5 class="fw-bold mb-3 no-print">Landed Cost Analysis Report</h5>
+                        <h5 class="fw-bold mb-3 no-print">Purchase Invoice Analysis Report</h5>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle border-top">
                                 <thead class="table-light">
                                     <tr class="small text-uppercase">
-                                        <th>Product / Model</th>
-                                        <th class="text-center">Tot Pieces</th>
-                                        <th class="text-end">Base Cost</th>
-                                        <th class="text-end">Real Landed Cost</th>
-                                        <th class="text-end">Suggested Selling (30%)</th>
+                                        <th style="width: 25%">Product Name</th>
+                                        <th class="text-center">Qty / Pcs</th>
+                                        <th class="text-end">USD/PC</th>
+                                        <th class="text-end">Total USD</th>
+                                        <th class="text-end bg-light">Landed/PC</th>
                                         <th class="text-end">Actual Selling</th>
-                                        <th class="text-center">Profit / PC</th>
+                                        <th class="text-center">Profit Status</th>
                                     </tr>
                                 </thead>
                                 <tbody id="analysisRows">

@@ -52,21 +52,48 @@ window.addProductRow = function() {
     tr.innerHTML = `
         <td>
             <input type="text" class="form-control form-control-sm mb-1 prod-name" placeholder="Product Name" oninput="calculateImportCost()">
-            <input type="text" class="form-control form-control-sm small prod-model" placeholder="Model (Optional)" oninput="calculateImportCost()">
+            <input type="text" class="form-control form-control-sm small prod-model" placeholder="Model" oninput="calculateImportCost()">
         </td>
-        <td><input type="number" class="form-control form-control-sm prod-usd" value="0" step="0.01" oninput="calculateImportCost()"></td>
-        <td><input type="number" class="form-control form-control-sm prod-size" value="1" oninput="calculateImportCost()"></td>
-        <td><input type="number" class="form-control form-control-sm prod-qty" value="0" oninput="calculateImportCost()"></td>
+        <td><input type="number" class="form-control form-control-sm prod-ctns" value="0" min="0" oninput="calculateImportCost()"></td>
+        <td>
+            <input type="number" class="form-control form-control-sm prod-pcs-ctn" value="1" min="1" oninput="calculateImportCost()" title="PCS per Carton">
+            <input type="number" class="form-control form-control-sm prod-pcs-pk mt-1 small" value="1" min="1" oninput="calculateImportCost()" placeholder="PCS/PK" title="PCS per Pack">
+        </td>
+        <td><input type="number" class="form-control form-control-sm prod-usd-pc" value="0" step="0.01" min="0" oninput="calculateImportCost()"></td>
+        <td class="text-muted small fw-bold"><span class="disp-usd-ctn">0.00</span></td>
+        <td class="text-primary fw-bold"><span class="disp-tot-pcs">0</span></td>
+        <td class="text-dark fw-bold"><span class="disp-tot-usd">0.00</span></td>
+        <td class="bg-light fw-bold text-center"><span class="disp-landed-pc">₦0.00</span></td>
         <td>
             <div class="d-flex flex-wrap gap-1">
-                <input type="number" class="form-control form-control-sm prod-sell-ctn" placeholder="CTN Price" style="width: 70px;" oninput="calculateImportCost()">
-                <input type="number" class="form-control form-control-sm prod-sell-dzn" placeholder="DZN Price" style="width: 70px;" oninput="calculateImportCost()">
-                <input type="number" class="form-control form-control-sm prod-sell-half" placeholder="1/2 Price" style="width: 70px;" oninput="calculateImportCost()">
-                <input type="number" class="form-control form-control-sm prod-sell" placeholder="PC Price" style="width: 70px;" oninput="calculateImportCost()">
+                <div class="unit-price-box">
+                    <input type="number" class="form-control form-control-sm prod-sell-ctn" placeholder="CTN ₦" style="width: 80px;" oninput="calculateImportCost()">
+                    <span class="sug-label sug-ctn text-muted">Sug: ₦0</span>
+                    <span class="cost-label cost-ctn text-danger small" style="font-size: 0.55rem; display: block;">Cost: ₦0</span>
+                </div>
+                <div class="unit-price-box">
+                    <input type="number" class="form-control form-control-sm prod-sell-half" placeholder="1/2 ₦" style="width: 80px;" oninput="calculateImportCost()">
+                    <span class="sug-label sug-half text-muted">Sug: ₦0</span>
+                    <span class="cost-label cost-half text-danger small" style="font-size: 0.55rem; display: block;">Cost: ₦0</span>
+                </div>
+                <div class="unit-price-box">
+                    <input type="number" class="form-control form-control-sm prod-sell-dzn" placeholder="DZN ₦" style="width: 80px;" oninput="calculateImportCost()">
+                    <span class="sug-label sug-dzn text-muted">Sug: ₦0</span>
+                    <span class="cost-label cost-dzn text-danger small" style="font-size: 0.55rem; display: block;">Cost: ₦0</span>
+                </div>
+                <div class="unit-price-box">
+                    <input type="number" class="form-control form-control-sm prod-sell-pc" placeholder="PC ₦" style="width: 80px;" oninput="calculateImportCost()">
+                    <span class="sug-label sug-pc text-muted">Sug: ₦0</span>
+                    <span class="cost-label cost-pc text-danger small" style="font-size: 0.55rem; display: block;">Cost: ₦0</span>
+                </div>
             </div>
-        </td>
-        <td>
-            <div class="row-profit profit-badge bg-light text-muted">Calculating...</div>
+            <div class="pricing-insight mt-2 p-2 rounded bg-light border small">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Expected Profit / CTN: <strong class="text-success disp-profit-ctn">₦0</strong></span>
+                    <span class="badge border bg-white text-dark disp-margin-badge">0% Margin</span>
+                </div>
+                <div class="low-profit-warning text-danger fw-bold mt-1 d-none"><i class="fas fa-exclamation-triangle"></i> Margin below target!</div>
+            </div>
         </td>
         <td>
             <button class="btn btn-link text-danger p-0 btn-remove" onclick="removeRow('${rowId}')">
@@ -86,95 +113,190 @@ window.removeRow = function(id) {
 
 window.calculateImportCost = function() {
     const rate = Number(document.getElementById('exchangeRate').value) || 0;
-    const shipping = Number(document.getElementById('expShipping').value) || 0;
-    const clearing = Number(document.getElementById('expClearing').value) || 0;
-    const transport = Number(document.getElementById('expTransport').value) || 0;
-    const other = 0; // Keeping it simple
-
-    const totalExpenses = shipping + clearing + transport + other;
-    document.getElementById('dispTotalExpenses').textContent = `₦${totalExpenses.toLocaleString()}`;
+    const totalExpenses = Number(document.getElementById('totalExpenses').value) || 0;
+    const targetMargin = Number(document.getElementById('profitMargin').value) || 0;
 
     const rows = document.querySelectorAll('#productRows tr');
-    let totalAllPieces = 0;
-    let totalGoodsCostAll = 0;
+    let grandTotalPieces = 0;
+    let grandTotalUSD = 0;
+    let grandExpectedProfit = 0;
 
-    const data = [];
-
+    // First pass: Calculate row basics and sums
+    const rowData = [];
     rows.forEach(row => {
-        const name = row.querySelector('.prod-name').value;
-        const usd = Number(row.querySelector('.prod-usd').value) || 0;
-        const size = Number(row.querySelector('.prod-size').value) || 0;
-        const qty = Number(row.querySelector('.prod-qty').value) || 0;
-        const selling = Number(row.querySelector('.prod-sell').value) || 0;
+        const ctns = Number(row.querySelector('.prod-ctns').value) || 0;
+        const pcsCtn = Number(row.querySelector('.prod-pcs-ctn').value) || 0;
+        const pcsPk = Number(row.querySelector('.prod-pcs-pk').value) || 1;
+        const usdPc = Number(row.querySelector('.prod-usd-pc').value) || 0;
+        
+        const totPieces = ctns * pcsCtn;
+        const totUSD = totPieces * usdPc;
+        const usdCtn = usdPc * pcsCtn;
 
-        const pieces = qty * size;
-        const baseCostPerPiece = usd * rate;
-        const rowGoodsCost = baseCostPerPiece * pieces;
+        grandTotalPieces += totPieces;
+        grandTotalUSD += totUSD;
 
-        totalAllPieces += pieces;
-        totalGoodsCostAll += rowGoodsCost;
+        // Update basic row displays
+        row.querySelector('.disp-usd-ctn').textContent = usdCtn.toLocaleString(undefined, {minimumFractionDigits: 2});
+        row.querySelector('.disp-tot-pcs').textContent = totPieces.toLocaleString();
+        row.querySelector('.disp-tot-usd').textContent = totUSD.toLocaleString(undefined, {minimumFractionDigits: 2});
 
-        data.push({ row, name, usd, size, qty, selling, pieces, baseCostPerPiece, rowGoodsCost });
+        rowData.push({ row, ctns, pcsCtn, pcsPk, usdPc, totPieces, totUSD, usdCtn });
     });
 
-    const expensePerPiece = totalAllPieces > 0 ? totalExpenses / totalAllPieces : 0;
+    const expensePerPiece = grandTotalPieces > 0 ? totalExpenses / grandTotalPieces : 0;
     document.getElementById('dispExpPerPiece').textContent = `₦${expensePerPiece.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
 
+    const grandGoodsCostNaira = grandTotalUSD * rate;
+    const grandFinalCost = grandGoodsCostNaira + totalExpenses;
+
+    // Update Summaries
+    if (document.getElementById('grandTotalUSD')) document.getElementById('grandTotalUSD').textContent = `$${grandTotalUSD.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    if (document.getElementById('grandGoodsCost')) document.getElementById('grandGoodsCost').textContent = `₦${grandGoodsCostNaira.toLocaleString()}`;
+    if (document.getElementById('grandExpenses')) document.getElementById('grandExpenses').textContent = `₦${totalExpenses.toLocaleString()}`;
+    if (document.getElementById('grandFinalCost')) document.getElementById('grandFinalCost').textContent = `₦${grandFinalCost.toLocaleString()}`;
+    if (document.getElementById('grandTotalPieces')) document.getElementById('grandTotalPieces').textContent = grandTotalPieces.toLocaleString();
+    if (document.getElementById('dispExRateSummary')) document.getElementById('dispExRateSummary').textContent = `Rate: @ ${rate.toLocaleString()}`;
+
+    // Second pass: Calculate Landed Cost and Profit
     let analysisHtml = "";
-    data.forEach(item => {
-        const sellPiece = Number(item.row.querySelector('.prod-sell').value) || 0;
+    rowData.forEach(item => {
+        const costPcInNaira = item.usdPc * rate;
+        const realLandedPc = costPcInNaira + expensePerPiece;
+        
+        item.row.querySelector('.disp-landed-pc').textContent = `₦${realLandedPc.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+        // Suggested & Cost Prices Logic
+        const sugPc = Math.ceil((realLandedPc * (1 + targetMargin / 100)) / 10) * 10;
+        const realCtnCost = realLandedPc * item.pcsCtn;
+        const realHalfCost = realCtnCost / 2;
+        const realDznCost = realLandedPc * 12;
+
+        const sugCtn = sugPc * item.pcsCtn;
+        const sugHalf = sugCtn / 2;
+        const sugDzn = sugPc * 12;
+
+        // Update Labels
+        item.row.querySelector('.sug-pc').textContent = `Sug: ₦${sugPc.toLocaleString()}`;
+        item.row.querySelector('.sug-ctn').textContent = `Sug: ₦${sugCtn.toLocaleString()}`;
+        item.row.querySelector('.sug-half').textContent = `Sug: ₦${sugHalf.toLocaleString()}`;
+        item.row.querySelector('.sug-dzn').textContent = `Sug: ₦${sugDzn.toLocaleString()}`;
+
+        item.row.querySelector('.cost-pc').textContent = `Cost: ₦${realLandedPc.toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+        item.row.querySelector('.cost-ctn').textContent = `Cost: ₦${realCtnCost.toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+        item.row.querySelector('.cost-half').textContent = `Cost: ₦${realHalfCost.toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+        item.row.querySelector('.cost-dzn').textContent = `Cost: ₦${realDznCost.toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+
+        // Get actual values
+        const sellPc = Number(item.row.querySelector('.prod-sell-pc').value) || 0;
         const sellCtn = Number(item.row.querySelector('.prod-sell-ctn').value) || 0;
-        const sellDzn = Number(item.row.querySelector('.prod-sell-dzn').value) || 0;
         const sellHalf = Number(item.row.querySelector('.prod-sell-half').value) || 0;
+        const sellDzn = Number(item.row.querySelector('.prod-sell-dzn').value) || 0;
 
-        const realCostPerPiece = item.baseCostPerPiece + expensePerPiece;
-        const suggested = realCostPerPiece * 1.3;
-        const profit = sellPiece > 0 ? sellPiece - realCostPerPiece : 0;
-        const indicator = item.row.querySelector('.row-profit');
+        const profitPc = sellPc > 0 ? sellPc - realLandedPc : 0;
+        const actualMargin = realLandedPc > 0 ? (profitPc / realLandedPc) * 100 : 0;
+        const totProfit = profitPc * item.totPieces;
+        grandExpectedProfit += totProfit;
 
-        if (sellPiece > 0) {
-            if (profit >= 0) {
-                indicator.textContent = `+₦${profit.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-                indicator.className = "row-profit profit-badge bg-success-light";
+        // Update Pricing Insight UI
+        item.row.querySelector('.disp-profit-ctn').textContent = `₦${(profitPc * item.pcsCtn).toLocaleString()}`;
+        item.row.querySelector('.disp-margin-badge').textContent = `${Math.round(actualMargin)}% Margin`;
+        
+        // Color coding inputs based on targets
+        let hasLoss = false;
+        ['pc', 'ctn', 'dzn', 'half'].forEach(u => {
+            const input = item.row.querySelector(`.prod-sell-${u}`);
+            const val = Number(input.value) || 0;
+            if (val === 0) return;
+            
+            const sug = (u === 'pc') ? sugPc : (u === 'ctn' ? sugCtn : (u === 'half' ? sugHalf : sugDzn));
+            const cost = (u === 'pc') ? realLandedPc : (u === 'ctn' ? realCtnCost : (u === 'half' ? realHalfCost : realDznCost));
+
+            if (val < cost - 1) { // 1 naira grace for rounding
+                input.style.border = "2px solid #ef4444";
+                input.style.color = "#ef4444";
+                input.style.backgroundColor = "#fff1f2";
+                hasLoss = true;
+            } else if (val < sug) {
+                input.style.border = "1px solid #f59e0b";
+                input.style.color = "#d97706";
+                input.style.backgroundColor = "#fffbeb";
             } else {
-                indicator.textContent = `-₦${Math.abs(profit).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-                indicator.className = "row-profit profit-badge bg-danger-light";
+                input.style.border = "1px solid #10b981";
+                input.style.color = "#059669";
+                input.style.backgroundColor = "#f0fdf4";
             }
+        });
+
+        const warning = item.row.querySelector('.low-profit-warning');
+        if (hasLoss) {
+            warning.classList.remove('d-none');
+            warning.innerHTML = `<i class="fas fa-exclamation-circle"></i> CRITICAL: Selling below cost!`;
+            warning.className = "low-profit-warning text-danger fw-bold mt-1";
+        } else if (sellPc > 0 && actualMargin < targetMargin) {
+            warning.classList.remove('d-none');
+            warning.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Margin below target!`;
+            warning.className = "low-profit-warning text-warning fw-bold mt-1";
         } else {
-            indicator.textContent = "Set Piece Price";
-            indicator.className = "row-profit profit-badge bg-light text-muted";
+            warning.classList.add('d-none');
         }
 
+        // Analysis Table Rows
+        const name = item.row.querySelector('.prod-name').value || "Unnamed Product";
+        const model = item.row.querySelector('.prod-model').value;
+        
         analysisHtml += `
             <tr>
-                <td class="fw-bold text-dark">
-                    ${toTitleCase(item.name)}
-                    <div class="small text-muted fw-normal no-print">CTN: ₦${sellCtn.toLocaleString()} | DZN: ₦${sellDzn.toLocaleString()} | 1/2: ₦${sellHalf.toLocaleString()}</div>
+                <td>
+                    <div class="fw-bold text-dark">${toTitleCase(name)}</div>
+                    ${model ? `<div class="small text-muted">${model}</div>` : ''}
+                    <div class="small text-muted no-print">
+                        CTN: ₦${sellCtn.toLocaleString()} | 1/2: ₦${sellHalf.toLocaleString()} | DZN: ₦${sellDzn.toLocaleString()}
+                    </div>
                 </td>
-                <td class="text-center">${item.pieces.toLocaleString()}</td>
-                <td class="text-end">₦${item.baseCostPerPiece.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                <td class="text-end fw-bold text-primary">₦${realCostPerPiece.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                <td class="text-end text-muted small">₦${suggested.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                <td class="text-end fw-bold text-success">₦${sellPiece.toLocaleString()}</td>
                 <td class="text-center">
-                    <span class="profit-badge ${profit >= 0 ? 'bg-success-light' : 'bg-danger-light'}">
-                        ${profit >= 0 ? '+' : '-'}${Math.abs(profit).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                    <span class="fw-bold">${item.totPieces.toLocaleString()}</span>
+                    <div class="small text-muted">${item.ctns} CTNS x ${item.pcsCtn}</div>
+                </td>
+                <td class="text-end">$${item.usdPc.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                <td class="text-end fw-bold">$${item.totUSD.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                <td class="text-end bg-light fw-bold text-primary">₦${realLandedPc.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                <td class="text-end fw-bold text-success">₦${sellPc.toLocaleString()}</td>
+                <td class="text-center">
+                    <span class="profit-badge ${profitPc >= 0 ? 'bg-success-light' : 'bg-danger-light'}">
+                        ${profitPc >= 0 ? 'PROFIT' : 'LOSS'} (₦${Math.abs(profitPc).toLocaleString()})
                     </span>
+                    <div class="small text-muted mt-1">Total: ₦${totProfit.toLocaleString()}</div>
                 </td>
             </tr>
         `;
     });
 
-    document.getElementById('analysisRows').innerHTML = analysisHtml;
+    if (document.getElementById('analysisRows')) document.getElementById('analysisRows').innerHTML = analysisHtml;
     
-    // Update Summaries
-    document.getElementById('grandTotalPieces').textContent = totalAllPieces.toLocaleString();
-    document.getElementById('grandGoodsCost').textContent = `₦${totalGoodsCostAll.toLocaleString()}`;
-    document.getElementById('grandExpenses').textContent = `₦${totalExpenses.toLocaleString()}`;
-    document.getElementById('grandFinalCost').textContent = `₦${(totalGoodsCostAll + totalExpenses).toLocaleString()}`;
+    // Add expected profit to summary if possible
+    const summaryRow = document.querySelector('.row.g-4.mt-2');
+    if (summaryRow && !document.getElementById('grandExpectedProfit')) {
+        const col = document.createElement('div');
+        col.className = "col-md-2";
+        col.innerHTML = `
+            <div class="card border-0 shadow-sm p-4 h-100 text-center bg-success text-white" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;">
+                <h6 class="text-white-50 small fw-bold text-uppercase mb-2">Expected Profit</h6>
+                <h3 class="fw-bold mb-0 text-white" id="grandExpectedProfit">₦0.00</h3>
+                <small class="text-white-50">Total Batch Margin</small>
+            </div>
+        `;
+        // Insert before result info
+        const totalItemsCol = document.getElementById('grandTotalPieces').parentElement.parentElement;
+        summaryRow.insertBefore(col, totalItemsCol);
+    }
+    
+    if (document.getElementById('grandExpectedProfit')) {
+        document.getElementById('grandExpectedProfit').textContent = `₦${grandExpectedProfit.toLocaleString()}`;
+    }
 }
 
 window.printReport = function() {
-    document.getElementById('printBatchDate').textContent = `Report Generated: ${new Date().toLocaleString()}`;
+    document.getElementById('printBatchDate').textContent = `Generated: ${new Date().toLocaleString()}`;
     window.print();
 }
