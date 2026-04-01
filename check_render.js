@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 
 async function checkRender() {
-    const url = "https://timson-api.onrender.com/status";
+    const url = "https://timson-bookshop-pos-app-3.onrender.com/status";
     const apiKey = "TIMSON_BOT_2026_SECURE_TOKEN";
 
     try {

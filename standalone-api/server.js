@@ -147,8 +147,6 @@ app.post("/chat", async (req, res) => {
     if (!message) return res.status(400).json({ error: "Missing message" });
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        
         // Fetch dashboard context
         const context = await getDashboardContext();
         
@@ -201,20 +199,27 @@ RULES:
         };
 
         let reply = "";
-        try {
-            // Priority 1: gemini-1.5-flash (v1)
-            reply = await tryGemini("gemini-1.5-flash", "v1");
-        } catch (e) {
-            console.warn("⚠️ Flash (v1) failed. Trying Flash (v1beta)...");
+        let lastError = null;
+
+        const modelsToTry = [
+            { name: "gemini-2.0-flash", version: "v1" },
+            { name: "gemini-2.5-flash", version: "v1" },
+            { name: "gemini-2.0-pro", version: "v1" },
+            { name: "gemini-1.5-flash", version: "v1beta" }
+        ];
+
+        for (const m of modelsToTry) {
             try {
-                // Priority 2: gemini-1.5-flash (v1beta)
-                reply = await tryGemini("gemini-1.5-flash", "v1beta");
-            } catch (e2) {
-                console.warn("⚠️ Flash (v1beta) failed. Trying gemini-pro (v1)...");
-                // Priority 3: gemini-pro (v1)
-                reply = await tryGemini("gemini-pro", "v1");
+                reply = await tryGemini(m.name, m.version);
+                if (reply) break;
+            } catch (e) {
+                console.warn(`⚠️ ${m.name} (${m.version}) failed:`, e.message);
+                lastError = e;
             }
         }
+
+        if (!reply && lastError) throw lastError;
+
         
         res.json({ success: true, reply });
     } catch (error) {

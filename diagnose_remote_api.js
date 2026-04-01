@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 
 // --- DIAGNOSTIC CONFIGURATION ---
-const YOUR_RENDER_URL = "https://timson-api.onrender.com"; // <-- PASTE YOUR URL HERE
+const YOUR_RENDER_URL = "https://timson-bookshop-pos-app-3.onrender.com"; // <-- PASTE YOUR URL HERE
 const API_KEY = "TIMSON_BOT_2026_SECURE_TOKEN";
 // ---------------------------------
 
