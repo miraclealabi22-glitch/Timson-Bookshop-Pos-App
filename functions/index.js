@@ -138,24 +138,42 @@ RULES:
             { role: "user", parts: [{ text: message }] }
         ];
 
-        // Attempt with gemini-1.5-flash first, fallback to gemini-pro if 404
-        let responseText = "";
+        // Direct REST API call for reliability (bypassing SDK 404 issues)
+        const tryGemini = async (modelName, apiVersion = "v1") => {
+            const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+            console.log(`[AI] Trying ${modelName} on ${apiVersion}...`);
+            
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents })
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                console.error(`[AI] Error ${modelName} (${response.status}):`, data);
+                throw new Error(data.error?.message || `API Error ${response.status}`);
+            }
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "No response content";
+        };
+
+        let reply = "";
         try {
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const result = await model.generateContent({ contents });
-            responseText = (await result.response).text();
+            // Priority 1: gemini-1.5-flash (v1)
+            reply = await tryGemini("gemini-1.5-flash", "v1");
         } catch (e) {
-            if (e.message && (e.message.includes("404") || e.message.includes("not found"))) {
-                console.log("⚠️ gemini-1.5-flash not found, falling back to gemini-pro...");
-                const modelFallback = genAI.getGenerativeModel({ model: "gemini-pro" });
-                const resultFallback = await modelFallback.generateContent({ contents });
-                responseText = (await resultFallback.response).text();
-            } else {
-                throw e; // Rethrow other errors (quota, auth, etc)
+            console.warn("⚠️ Flash (v1) failed. Trying Flash (v1beta)...");
+            try {
+                // Priority 2: gemini-1.5-flash (v1beta)
+                reply = await tryGemini("gemini-1.5-flash", "v1beta");
+            } catch (e2) {
+                console.warn("⚠️ Flash (v1beta) failed. Trying gemini-pro (v1)...");
+                // Priority 3: gemini-pro (v1)
+                reply = await tryGemini("gemini-pro", "v1");
             }
         }
         
-        res.json({ success: true, reply: responseText });
+        res.json({ success: true, reply });
     } catch (error) {
         console.error("AI Error:", error);
         res.status(500).json({ success: false, error: "AI Assistant is resting. Run 'firebase functions:config:set gemini.key=YOUR_KEY' if this persists." });
