@@ -116,7 +116,10 @@ function renderCustomersTable() {
                     </div>
                 </td>
                 <td class="text-end pe-4 action-btns">
-                    <button class="btn btn-outline-danger fw-medium px-3 me-2" onclick="deleteCustomer('${c.id}')">
+                    <button class="btn btn-outline-primary fw-medium px-3 me-2" onclick="location.href='customer-details.html?id=${c.id}'">
+                        <i class="fas fa-history me-1"></i> History
+                    </button>
+                    <button class="btn btn-outline-danger fw-medium px-3" onclick="deleteCustomer('${c.id}')">
                         <i class="fas fa-trash me-1"></i> Delete
                     </button>
                 </td>

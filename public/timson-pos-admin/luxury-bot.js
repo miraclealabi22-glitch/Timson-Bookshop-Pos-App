@@ -11,14 +11,18 @@
 
     // --- State ---
     let isOpen = false;
-    let messages = [
-        { role: 'bot', text: "Welcome to Timson Luxury Fashion. I am your concierge. How can I assist you with your bespoke operations today?" }
+    let messages = JSON.parse(localStorage.getItem('timson_chat_history')) || [
+        { role: 'bot', text: "Welcome to Timson POS Support. I am your operations concierge. How can I assist you with your business today?", time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }
     ];
 
     // --- DOM Elements ---
     let container, trigger, chatWindow, messagesContainer, input;
 
     function render() {
+        // Remove existing if any
+        const old = document.getElementById('lux-bot-container');
+        if(old) old.remove();
+
         // Create Container
         container = document.createElement('div');
         container.id = 'lux-bot-container';
@@ -27,7 +31,7 @@
         // Create Trigger
         trigger = document.createElement('div');
         trigger.className = 'lux-bot-trigger';
-        trigger.innerHTML = '<i class="fas fa-robot"></i>';
+        trigger.innerHTML = '<iconify-icon icon="hugeicons:bot" width="32" height="32" style="color: white;"></iconify-icon>';
         trigger.onclick = toggleBot;
         container.appendChild(trigger);
 
@@ -37,19 +41,29 @@
         chatWindow.style.display = 'none';
         chatWindow.innerHTML = `
             <div class="lux-chat-header">
-                <h4>Timson POS Assistant</h4>
-                <p>Support & Operations Concierge</p>
+                <div class="lux-header-info">
+                    <iconify-icon icon="solar:shield-star-bold-duotone" width="24" height="24" class="me-2"></iconify-icon>
+                    <div>
+                        <h4>Timson POS Assistant</h4>
+                        <p>Secure Operations Support</p>
+                    </div>
+                </div>
+                <button class="lux-clear-btn" title="Clear History" id="lux-clear">
+                    <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="20" height="20"></iconify-icon>
+                </button>
             </div>
             <div class="lux-chat-messages" id="lux-messages"></div>
             <div class="lux-chat-actions">
-                <button class="lux-action-btn" data-query="How do I use this dashboard?">App Guide</button>
+                <button class="lux-action-btn" data-query="How do I use this dashboard?">Help Guide</button>
                 <button class="lux-action-btn" data-query="Show my current stock status.">Stock Check</button>
-                <button class="lux-action-btn" data-query="Give me a summary of today's sales.">Sales Report</button>
+                <button class="lux-action-btn" data-query="Suggest a price for calculus book.">Price Suggestion</button>
             </div>
             <div class="lux-chat-input-area">
                 <div class="lux-input-group">
-                    <input type="text" class="lux-chat-input" placeholder="Ask about POS features..." id="lux-input">
-                    <button class="lux-send-btn" id="lux-send"><i class="fas fa-paper-plane"></i></button>
+                    <input type="text" class="lux-chat-input" placeholder="Ask anything about POS..." id="lux-input">
+                    <button class="lux-send-btn" id="lux-send">
+                        <iconify-icon icon="solar:send-square-bold-duotone" width="24" height="24"></iconify-icon>
+                    </button>
                 </div>
             </div>
         `;
@@ -60,6 +74,7 @@
 
         // Event Listeners
         chatWindow.querySelector('#lux-send').onclick = () => sendMessage(input.value);
+        chatWindow.querySelector('#lux-clear').onclick = clearHistory;
         input.onkeypress = (e) => { if(e.key === 'Enter') sendMessage(input.value); };
         
         chatWindow.querySelectorAll('.lux-action-btn').forEach(btn => {
@@ -72,17 +87,36 @@
     function toggleBot() {
         isOpen = !isOpen;
         chatWindow.style.display = isOpen ? 'flex' : 'none';
-        trigger.innerHTML = isOpen ? '<i class="fas fa-times"></i>' : '<i class="fas fa-gem"></i>';
-        if (isOpen) input.focus();
+        trigger.innerHTML = isOpen 
+            ? '<iconify-icon icon="solar:close-circle-bold-duotone" width="32" height="32"></iconify-icon>' 
+            : '<iconify-icon icon="hugeicons:bot" width="32" height="32" style="color: white;"></iconify-icon>';
+        
+        if (isOpen) {
+            input.focus();
+            updateMessages(); // ensure scroll to bottom
+        }
     }
 
     // Expose toggle to window
     window.toggleLuxuryBot = toggleBot;
 
+    function clearHistory() {
+        if(confirm("Are you sure you want to clear your chat history?")) {
+            messages = [
+                { role: 'bot', text: "History cleared. How can I assist you now?", time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }
+            ];
+            localStorage.setItem('timson_chat_history', JSON.stringify(messages));
+            updateMessages();
+        }
+    }
+
     function updateMessages() {
         if (!messagesContainer) return;
         messagesContainer.innerHTML = messages.map(m => `
-            <div class="lux-msg ${m.role}">${m.text}</div>
+            <div class="lux-msg ${m.role}">
+                <div class="lux-msg-text">${m.text}</div>
+                <div class="lux-msg-time">${m.time || ''}</div>
+            </div>
         `).join('');
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
@@ -90,45 +124,36 @@
     async function sendMessage(text) {
         if (!text || !text.trim()) return;
         
-        messages.push({ role: 'user', text });
+        const now = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        messages.push({ role: 'user', text, time: now });
         updateMessages();
         input.value = '';
+        localStorage.setItem('timson_chat_history', JSON.stringify(messages));
 
-        const typingMsg = { role: 'bot', text: '<i>Typing...</i>' };
+        const typingId = 'typing-' + Date.now();
+        const typingMsg = { role: 'bot', text: '<span class="lux-typing"><i>Typing...</i></span>', time: '', id: typingId };
         messages.push(typingMsg);
         updateMessages();
 
         try {
-            const res = await fetch(`${API_BASE}/chat`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'x-api-key': API_KEY
-                },
-                body: JSON.stringify({ 
-                    message: text,
-                    history: messages.filter(m => m.text !== '<i>Typing...</i>').map(m => ({ 
-                        role: m.role === 'bot' ? 'model' : 'user', 
-                        parts: m.text 
-                    }))
-                })
-            });
+            const data = await window.timsonApi.post(`${API_BASE}/chat`, { 
+                message: text,
+                history: messages.slice(0, -1).map(m => ({ 
+                    role: m.role === 'bot' ? 'model' : 'user', 
+                    parts: m.text.replace(/<[^>]*>/g, '') // strip any html tags
+                }))
+            }, { "x-api-key": API_KEY });
 
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({ error: "Cloud connection failed" }));
-                const detail = errData.debug ? ` | Details: ${errData.debug}` : "";
-                throw new Error((errData.error || "Server Error") + detail);
-            }
-
-            const data = await res.json();
-            messages.pop(); // Remove typing
-            messages.push({ role: 'bot', text: data.reply });
+            messages = messages.filter(m => m.id !== typingId);
+            messages.push({ role: 'bot', text: data.reply, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
         } catch (err) {
-            messages.pop();
+            messages = messages.filter(m => m.id !== typingId);
             console.error("Bot Error:", err);
-            const displayErr = err.message || "Unknown Error";
-            messages.push({ role: 'bot', text: `⚠️ ${displayErr}. (Check your Render environment variables if this persists).` });
+            // Error handling is gracefully managed by timsonApi (SweetAlert2)
+            messages.push({ role: 'bot', text: `⚠️ Connection lost. I'll be here when you're back online.`, time: '' });
         }
+        
+        localStorage.setItem('timson_chat_history', JSON.stringify(messages));
         updateMessages();
     }
 

@@ -82,9 +82,9 @@ function showAlert(title, message, type='info') {
 function setupAuthListeners() {
     onAuthStateChanged(auth, user => {
         if (!user) {
-            console.warn("No firebase user found. Using test user.");
-            currentUser.name = "Test Cashier";
-            currentUser.id = "test-cashier-id";
+            console.warn("No authorized session found. Redirecting to login...");
+            window.location.href = "../timson-pos-login/index.html";
+            return;
         } else {
             currentUser.name = user.displayName || user.email || 'Cashier';
             currentUser.id = user.uid;

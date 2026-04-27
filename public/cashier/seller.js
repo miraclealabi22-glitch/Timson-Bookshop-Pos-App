@@ -79,9 +79,9 @@ function showAlert(title, message, type='info') {
 function setupAuthListeners() {
     onAuthStateChanged(auth, user => {
         if (!user) {
-            console.warn("No firebase user found. Using test user.");
-            currentUser.name = "Test Seller";
-            currentUser.id = "test-seller-id";
+            console.warn("No authorized session found. Redirecting to login...");
+            window.location.href = "../timson-pos-login/index.html";
+            return;
         } else {
             currentUser.name = user.displayName || user.email || 'Seller';
             currentUser.id = user.uid;
@@ -123,7 +123,6 @@ function loadDataSubscriptions() {
         customers = Object.entries(data).map(([k, v]) => ({ id: k, ...v }));
         populateCustomerList();
         populateNypSelectors();
-        if (typeof renderDebtorsReport === 'function') renderDebtorsReport();
         if (typeof renderAllDebtorsReport === 'function') renderAllDebtorsReport();
         if (typeof populateCreditCustomersCheckout === 'function') populateCreditCustomersCheckout();
     });
@@ -915,114 +914,6 @@ window.processNypSale = async function() {
 }
 
 
-// --- NYP Payment (Credit Payment Collection) logic ---
-window.renderDebtorsReport = function() {
-    const tbody = document.getElementById('debtorsTableBody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    const debtors = customers.filter(c => (Number(c.balanceOwed) || 0) > 0);
-
-    if (debtors.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-muted">No outstanding debtors.</td></tr>';
-        return;
-    }
-
-    debtors.sort((a, b) => (Number(b.balanceOwed) || 0) - (Number(a.balanceOwed) || 0));
-
-    const nypSel = document.getElementById('nypCustomer');
-    if (nypSel) {
-        nypSel.innerHTML = '<option value="" disabled selected>Select Customer...</option>';
-        debtors.forEach(c => {
-            nypSel.innerHTML += `<option value="${c.id}">${c.name} (Debt: ₦${(Number(c.balanceOwed)).toLocaleString()})</option>`;
-        });
-    }
-
-    debtors.forEach(d => {
-        let lastDate = "Unknown";
-        if (d.transactions) {
-            const txns = Object.values(d.transactions);
-            const pays = txns.filter(t => t.type === 'Payment').sort((a, b) => new Date(b.date) - new Date(a.date));
-            if (pays.length > 0) lastDate = new Date(pays[0].date).toLocaleDateString();
-        }
-
-        tbody.innerHTML += `
-            <tr>
-                <td class="fw-bold text-start"><i class="fas fa-user-circle text-muted me-2"></i>${d.name}</td>
-                <td>${d.phone || d.email || 'N/A'}</td>
-                <td class="fw-bold text-danger">₦${(Number(d.balanceOwed) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                <td class="text-muted">${lastDate}</td>
-                <td><button class="btn btn-sm btn-outline-info" onclick="openNypPaymentModal()"><i class="fas fa-handshake"></i> Collect</button></td>
-            </tr>
-        `;
-    });
-}
-
-window.openNypPaymentModal = function () {
-    document.getElementById('nypCustomer').value = "";
-    document.getElementById('nypDebtBalance').value = "₦0.00";
-    document.getElementById('nypAmountPaid').value = "";
-    new bootstrap.Modal(document.getElementById('nypModal')).show();
-}
-
-window.nypCustomerChanged = function () {
-    const cId = document.getElementById('nypCustomer').value;
-    const cObj = customers.find(c => c.id === cId);
-    if (cObj) {
-        document.getElementById('nypDebtBalance').value = `₦${(Number(cObj.balanceOwed) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-    }
-}
-
-document.getElementById('nypForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btnProcessNyp');
-    
-    const cId = document.getElementById('nypCustomer').value;
-    const amt = Number(document.getElementById('nypAmountPaid').value) || 0;
-    const cObj = customers.find(c => c.id === cId);
-
-    if (!cObj || amt <= 0) return;
-
-    // Safety confirmation
-    const confirmed = confirm(`--- CONFIRM NYP PAYMENT ---\n\nCustomer: ${cObj.name}\nAmount: ₦${amt.toLocaleString()}\n\nIs this correct? This will update the customer's debt balance immediately.`);
-    if (!confirmed) return;
-
-    btn.innerHTML = "Processing...";
-    btn.disabled = true;
-
-    try {
-        if (cObj) {
-            const newBal = Math.max(0, (Number(cObj.balanceOwed) || 0) - amt);
-            await update(ref(db, `customersRef/${cId}`), { balanceOwed: newBal });
-
-            await push(ref(db, `customersRef/${cId}/transactions`), {
-                date: new Date().toISOString(),
-                type: "Payment",
-                amount: amt,
-                ref: 'NYP-' + Date.now().toString().slice(-6)
-            });
-
-            await push(ref(db, 'transactionsRef'), {
-                refNo: 'NYP-' + Date.now().toString().slice(-6),
-                cashierName: currentUser.name + " (Seller)",
-                customerId: cId,
-                customerName: cObj.name,
-                totalAmount: amt,
-                paymentMethod: "NYP Debt Payment",
-                date: new Date().toISOString()
-            });
-
-            showAlert("Success", "NYP Payment processed!", "success");
-            const mdl = bootstrap.Modal.getOrCreateInstance(document.getElementById('nypModal'));
-            if(mdl) mdl.hide();
-        }
-    } catch (err) {
-        console.error(err);
-        showAlert("Error", "Failed to process payment.", "danger");
-    } finally {
-        btn.innerHTML = "Process NYP Payment";
-        btn.disabled = false;
-    }
-});
 
 
 // --- CashSales Report Logic ---

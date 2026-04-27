@@ -91,8 +91,6 @@
             <li><a href="#" class="sidebar-menu-link active" onclick="switchTab('seller-pos')"><i class="fas fa-cash-register action-icon"></i> Cash Sales</a></li>
             <li><a href="#" class="sidebar-menu-link" onclick="switchTab('nyp-sales')"><i class="fas fa-file-invoice-dollar action-icon"></i> NYP Sales</a></li>
             
-            <li class="sidebar-header-label mt-3">DEBT MANAGEMENT</li>
-            <li><a href="#" class="sidebar-menu-link" onclick="switchTab('nyp-payment')"><i class="fas fa-hand-holding-usd action-icon"></i> NYP Payment (Debt)</a></li>
             
             <li class="sidebar-header-label mt-3">REPORTS</li>
             <li><a href="#" class="sidebar-menu-link" onclick="switchTab('cashsales-report')"><i class="fas fa-chart-line action-icon"></i> CashSales Report</a></li>
@@ -297,31 +295,6 @@
                 </div>
             </div>
 
-            <!-- 3. NYP PAYMENT SCREEN -->
-            <div id="tab-nyp-payment" class="tab-pane d-none">
-                <div class="pos-panel p-4 text-center py-5">
-                    <i class="fas fa-hand-holding-usd fa-4x text-primary mb-3"></i>
-                    <h2>NYP (Credit) Payment Collection</h2>
-                    <p class="text-muted">Process payments for customer outstanding balances.</p>
-                    <button class="btn btn-primary px-4 py-2" onclick="openNypPaymentModal()">Open NYP Payment Form</button>
-                    <div class="table-responsive mt-5">
-                        <h4 class="fw-bold mb-3 text-start">All Debtors</h4>
-                        <table class="table table-hover table-bordered text-center align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Customer Name</th>
-                                    <th>Phone / Email</th>
-                                    <th>Total Debt (₦)</th>
-                                    <th>Last Payment Date</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="debtorsTableBody">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
 
             <!-- 4. CASHSALES REPORT SCREEN -->
             <div id="tab-cashsales-report" class="tab-pane d-none">
@@ -416,34 +389,6 @@
         </div>
     </div>
 
-    <!-- NYP Payment Modal -->
-    <div class="modal fade" id="nypModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-info text-white border-0">
-                    <h5 class="modal-title fw-bold">Process NYP (Credit) Payment</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <form id="nypForm">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Select Customer</label>
-                            <select id="nypCustomer" class="form-select form-select-lg" required onchange="nypCustomerChanged()"></select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Total Debt Balance (₦)</label>
-                            <input type="text" id="nypDebtBalance" class="form-control text-danger fw-bold bg-light" readonly value="₦0.00">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Amount Paid (₦)</label>
-                            <input type="number" id="nypAmountPaid" class="form-control form-control-lg text-success fw-bold" step="0.01" min="0.01" required>
-                        </div>
-                        <button type="submit" class="btn btn-info text-white w-100 py-2 fw-bold" id="btnProcessNyp">Process NYP Payment</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

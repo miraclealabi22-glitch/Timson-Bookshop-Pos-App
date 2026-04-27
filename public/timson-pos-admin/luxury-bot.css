@@ -1,15 +1,15 @@
-/* Synchronized Dashboard AI Bot Styles */
+/* Timson POS AI - Premium Glassmorphism Design */
 :root {
-    --pos-primary: #4361ee;
-    --pos-primary-hover: #3a53d0;
-    --pos-dark: #111827;
-    --pos-text: #1e293b;
-    --pos-text-muted: #64748b;
-    --pos-bg: #f8f9fa;
-    --pos-white: #ffffff;
-    --pos-border: #e2e8f0;
-    --pos-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    --pos-font: 'Inter', sans-serif;
+    --lux-primary: #6366f1;
+    --lux-primary-glow: rgba(99, 102, 241, 0.5);
+    --lux-glass-bg: rgba(255, 255, 255, 0.85);
+    --lux-dark: #0f172a;
+    --lux-text: #334155;
+    --lux-text-light: #64748b;
+    --lux-white: #ffffff;
+    --lux-border: rgba(226, 232, 240, 0.8);
+    --lux-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+    --lux-font: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 #lux-bot-container {
@@ -17,189 +17,250 @@
     bottom: 30px;
     right: 30px;
     z-index: 10000;
-    font-family: var(--pos-font);
+    font-family: var(--lux-font);
 }
 
-/* Trigger Button - Matching Sidebar/Primary buttons */
+/* Premium Trigger Button */
 .lux-bot-trigger {
-    width: 60px;
-    height: 60px;
-    background: var(--pos-primary);
+    width: 65px;
+    height: 65px;
+    background: linear-gradient(135deg, var(--lux-primary), #4f46e5);
     border: none;
-    border-radius: 50%;
+    border-radius: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: var(--pos-shadow);
-    transition: all 0.3s ease;
+    box-shadow: 0 10px 20px var(--lux-primary-glow);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    color: white;
 }
 
 .lux-bot-trigger:hover {
-    background: var(--pos-primary-hover);
-    transform: translateY(-3px);
+    transform: rotate(10deg) scale(1.1);
+    box-shadow: 0 15px 30px var(--lux-primary-glow);
 }
 
-.lux-bot-trigger i {
-    color: var(--pos-white);
-    font-size: 24px;
+.lux-bot-trigger iconify-icon {
+    font-size: 32px;
 }
 
-/* Chat Window - Matching Dashboard Cards */
+/* Glassmorphism Chat Window */
 .lux-chat-window {
     position: absolute;
-    bottom: 75px;
+    bottom: 85px;
     right: 0;
-    width: 380px;
-    height: 550px;
-    background: var(--pos-white);
-    border: 1px solid var(--pos-border);
-    border-radius: 16px;
+    width: 400px;
+    height: 600px;
+    background: var(--lux-glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 24px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-    animation: posIn 0.3s ease-out;
+    box-shadow: var(--lux-shadow);
+    animation: luxSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: bottom right;
 }
 
-@keyframes posIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+@keyframes luxSlideUp {
+    from { opacity: 0; transform: translateY(30px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Header - Matching Top Navbar/Sidebar style */
+/* Refined Header */
 .lux-chat-header {
-    background: var(--pos-dark);
-    padding: 20px;
-    color: var(--pos-white);
+    background: var(--lux-dark);
+    padding: 24px;
+    color: var(--lux-white);
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lux-header-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .lux-chat-header h4 {
     margin: 0;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
-    color: var(--pos-white);
+    letter-spacing: -0.02em;
 }
 
 .lux-chat-header p {
-    margin: 4px 0 0;
-    font-size: 12px;
-    color: var(--pos-text-muted);
-    font-weight: 400;
+    margin: 2px 0 0;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
 }
 
-/* Messages */
+.lux-clear-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lux-clear-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+/* Chat History Area */
 .lux-chat-messages {
     flex: 1;
-    padding: 20px;
+    padding: 24px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    background: #fdfdfd;
+    gap: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.1) transparent;
 }
 
 .lux-msg {
-    max-width: 80%;
-    padding: 12px 16px;
-    border-radius: 12px;
+    max-width: 85%;
+    padding: 14px 18px;
+    border-radius: 18px;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.6;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
 }
 
 .lux-msg.bot {
     align-self: flex-start;
-    background: var(--pos-bg);
-    color: var(--pos-text);
-    border: 1px solid var(--pos-border);
+    background: white;
+    color: var(--lux-text);
+    border-bottom-left-radius: 4px;
+    border: 1px solid var(--lux-border);
 }
 
 .lux-msg.user {
     align-self: flex-end;
-    background: var(--pos-primary);
-    color: var(--pos-white);
+    background: var(--lux-primary);
+    color: white;
+    border-bottom-right-radius: 4px;
 }
 
-/* Quick Actions - Matching Secondary Buttons */
-.lux-chat-actions {
-    padding: 10px 20px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    background: var(--pos-white);
-    border-top: 1px solid var(--pos-border);
+.lux-msg-time {
+    font-size: 10px;
+    margin-top: 6px;
+    opacity: 0.6;
+    text-align: right;
 }
+
+/* Typing Indicator Animation */
+.lux-typing {
+    display: inline-block;
+    color: var(--lux-primary);
+}
+
+/* Action Chips */
+.lux-chat-actions {
+    padding: 12px 20px;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    background: rgba(255,255,255,0.4);
+    border-top: 1px solid var(--lux-border);
+}
+
+.lux-chat-actions::-webkit-scrollbar { display: none; }
 
 .lux-action-btn {
-    background: #fff;
-    border: 1px solid var(--pos-border);
-    color: var(--pos-text-secondary);
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 500;
+    white-space: nowrap;
+    background: white;
+    border: 1px solid var(--lux-border);
+    color: var(--lux-text);
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .lux-action-btn:hover {
-    background: var(--pos-bg);
-    border-color: var(--pos-primary);
-    color: var(--pos-primary);
+    background: var(--lux-primary);
+    color: white;
+    border-color: var(--lux-primary);
 }
 
-/* Input Area */
+/* Modern Input Bar */
 .lux-chat-input-area {
-    padding: 15px 20px 20px;
-    background: var(--pos-white);
-    border-top: 1px solid var(--pos-border);
+    padding: 20px;
 }
 
 .lux-input-group {
+    background: white;
+    border: 1.5px solid var(--lux-border);
+    border-radius: 18px;
+    padding: 6px;
     display: flex;
-    gap: 10px;
+    align-items: center;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.lux-input-group:focus-within {
+    border-color: var(--lux-primary);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
 }
 
 .lux-chat-input {
     flex: 1;
-    border: 1px solid var(--pos-border);
-    background: var(--pos-bg);
-    border-radius: 8px;
-    padding: 10px 15px;
+    border: none;
+    background: transparent;
+    padding: 10px 14px;
     font-size: 14px;
+    color: var(--lux-text);
     outline: none;
 }
 
-.lux-chat-input:focus {
-    border-color: var(--pos-primary);
-    background: #fff;
-}
-
 .lux-send-btn {
-    background: var(--pos-primary);
-    color: var(--pos-white);
+    background: var(--lux-primary);
+    color: white;
     border: none;
-    width: 42px;
-    height: 42px;
-    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s;
+    transition: all 0.2s;
 }
 
 .lux-send-btn:hover {
-    background: var(--pos-primary-hover);
+    transform: scale(1.05);
+    background: #4f46e5;
 }
 
-/* Mobile */
+/* Mobile Responsiveness */
 @media (max-width: 500px) {
     .lux-chat-window {
-        width: calc(100vw - 40px);
-        height: 70vh;
-        bottom: 70px;
+        width: calc(100vw - 30px);
+        height: 75vh;
+        bottom: 80px;
+        right: -15px;
+    }
+    #lux-bot-container {
+        bottom: 20px;
+        right: 20px;
     }
 }
+

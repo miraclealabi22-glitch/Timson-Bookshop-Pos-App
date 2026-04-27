@@ -13,6 +13,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="admin.css">
+    <!-- Luxury AI Bot Fonts & CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="luxury-bot.css">
+    <!-- Iconify SVG Framework -->
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <style>
         :root {
             --primary-gradient: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
@@ -235,123 +240,152 @@
             <li><a href="inventory-management.html"><i class="fas fa-boxes"></i> Inventory</a></li>
             <li class="active"><a href="stock-control.html"><i class="fas fa-clipboard-check"></i> Stock Control</a></li>
             <li><a href="import/import-finalizer.html"><i class="fas fa-calculator"></i> Import Finalizer</a></li>
+            <li><a href="../cashier/cashier.html"><i class="fas fa-cash-register"></i> Cashier POS</a></li>
+            <li><a href="../cashier/seller.html"><i class="fas fa-user-tie"></i> Seller POS</a></li>
             <li><a href="sales-reports.html"><i class="fas fa-file-invoice-dollar"></i> Sales Reports</a></li>
             <li><a href="customer-credit.html"><i class="fas fa-credit-card"></i> Customer Credit</a></li>
-            <li><a href="employee-management.html"><i class="fas fa-users"></i> Employees</a></li>
+            <li><a href="employee-management.html"><i class="fas fa-users"></i> Employee Management</a></li>
             <li><a href="analytics.html"><i class="fas fa-chart-pie"></i> Analytics</a></li>
+            <li><a href="#" id="luxuryAiTab" onclick="window.toggleLuxuryBot(); return false;"><iconify-icon icon="hugeicons:bot" width="18" height="18" class="me-2" style="color: white;"></iconify-icon> AI Assistant</a></li>
             <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
         </ul>
     </nav>
 
     <!-- Page Content -->
     <div id="content" class="content">
-        <div class="container-fluid max-w-7xl mx-auto">
+        <div class="container-fluid">
             
-            <div class="mb-5 d-flex justify-content-between align-items-center">
+            <div class="mb-4 d-flex justify-content-between align-items-center">
                 <div>
-                    <h1 class="fw-bold h3 mb-1">NYP Reconciliation</h1>
-                    <p class="text-muted small mb-0">Manage returns and settle pending credit accounts with precision.</p>
+                    <h1 class="fw-bold h3 mb-1 text-dark">NYP Reconciliation POS</h1>
+                    <p class="text-muted small mb-0">Return goods to stock and automatically deduct from customer debt.</p>
                 </div>
-                <a href="stock-control.html" class="btn btn-outline-secondary btn-sm rounded-pill px-4">
-                    <i class="fas fa-chevron-left me-2"></i> Return to Stock Control
-                </a>
+                <div class="d-flex gap-2">
+                    <a href="stock-control.html" class="btn btn-outline-secondary btn-sm rounded-pill px-4">
+                        <i class="fas fa-chevron-left me-2"></i> Back
+                    </a>
+                </div>
             </div>
 
-            <div class="premium-card">
-                <div class="premium-header">
-                    <div class="badge-premium mb-3">NYP STOCK RETURN MODULE</div>
-                    <h2>Reconciliation Portal</h2>
-                    <p class="opacity-75 small">Process customer returns and automatically adjust inventory balances.</p>
+            <div class="row g-4">
+                <!-- Left Catalog Panel -->
+                <div class="col-lg-8">
+                    <div class="premium-card h-100 d-flex flex-column" style="min-height: 700px;">
+                        <div class="premium-header py-4">
+                            <div class="d-flex justify-content-between align-items-center px-4">
+                                <div class="text-start">
+                                    <div class="badge-premium mb-2">RETURNABLE ITEMS</div>
+                                    <h4 class="mb-0 fw-bold text-white">Purchase History</h4>
+                                </div>
+                                <div class="d-flex gap-2" style="width: 60%;">
+                                    <div class="position-relative w-100">
+                                        <input type="text" id="nypTransactionSearch" class="form-control-modern shadow-sm w-100 fw-bold text-primary" placeholder="Search NYP Ref No or Customer..." list="nypTxnDataList" autocomplete="off">
+                                        <datalist id="nypTxnDataList"></datalist>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-4 flex-grow-1" style="background: #f8fafc; overflow-y: auto;">
+                            <!-- Search & Filter -->
+                            <div class="input-group mb-4 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+                                <span class="input-group-text bg-white border-0"><i class="fas fa-search text-muted"></i></span>
+                                <input type="text" id="catalogSearch" class="form-control border-0" placeholder="Search previously bought items...">
+                            </div>
+
+                            <div id="purchasedCatalogGrid" class="row g-3">
+                                <div class="col-12 text-center py-5 text-muted">
+                                    <div class="mb-3 opacity-25">
+                                        <i class="fas fa-user-tag fa-4x"></i>
+                                    </div>
+                                    <h5>Select a customer to view their credit purchases</h5>
+                                    <p class="small">Only items bought on credit can be returned here.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="card-body p-0">
-                    <form id="returnForm">
-                        <div class="dynamic-form-grid">
-                            <div class="form-group-modern">
-                                <label>Reference ID</label>
-                                <input type="text" id="returnRefNo" class="form-control-modern" readonly>
-                            </div>
-                            <div class="form-group-modern">
-                                <label>Target Transaction (NYP ID)</label>
-                                <select id="nypIdSelect" class="form-control-modern" required>
-                                    <option value="" selected disabled>Select NYP...</option>
-                                </select>
-                            </div>
-                            <div class="form-group-modern">
-                                <label>Processing Staff</label>
-                                <input type="text" id="staffName" class="form-control-modern" readonly>
-                            </div>
-                            <div class="form-group-modern">
-                                <label>Period (Year)</label>
-                                <input type="text" id="yearBox" class="form-control-modern text-center" readonly>
-                            </div>
-                            <div class="form-group-modern">
-                                <label>Period (Month)</label>
-                                <input type="text" id="monthBox" class="form-control-modern text-center" readonly>
-                            </div>
-                            <div class="form-group-modern">
-                                <label>Transaction Date</label>
-                                <input type="date" id="returnDate" class="form-control-modern" required>
-                            </div>
-                        </div>
-
-                        <!-- Customer Pulse Info -->
-                        <div id="customerInfoPanel" class="px-4 py-3 bg-light d-none align-items-center justify-content-between border-bottom">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-primary text-white rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                    <i class="fas fa-user-check"></i>
-                                </div>
+                <!-- Right Return Cart Panel -->
+                <div class="col-lg-4">
+                    <div class="premium-card d-flex flex-column h-100">
+                        <div class="p-3 border-bottom bg-white">
+                            <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <span class="d-block small text-muted text-uppercase fw-bold ls-1">Customer Profile</span>
-                                    <span id="displayCustomer" class="fw-bold h6 mb-0 text-dark">---</span>
+                                    <h6 class="fw-bold mb-0 text-dark">Return Cart</h6>
+                                    <small class="text-muted">Ref: <span id="returnRefNoDisplay" class="fw-bold text-primary">--</span></small>
                                 </div>
-                            </div>
-                            <div class="text-end">
-                                <span class="d-block small text-muted text-uppercase fw-bold ls-1">Pending Debt</span>
-                                <span id="displayBalance" class="fw-bold h5 mb-0 text-danger">₦0.00</span>
+                                <span id="cartCountBadge" class="badge bg-primary rounded-pill px-3 py-2">0 Items</span>
                             </div>
                         </div>
 
-                        <!-- Modern Items Table -->
-                        <div class="p-4 bg-white">
-                            <div class="table-responsive">
-                                <table class="table-premium" id="returnItemsTable">
-                                    <thead>
-                                        <tr>
-                                            <th class="row-num-col">S/N</th>
-                                            <th>Stock Balance</th>
-                                            <th>Description</th>
-                                            <th style="width: 100px;">Return Qty</th>
-                                            <th class="text-center">Carton Size</th>
-                                            <th>Price Rate</th>
-                                            <th>Amount (₦)</th>
-                                            <th style="width: 100px;">Discount</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="returnTableBody">
-                                        <tr>
-                                            <td colspan="8" class="text-center py-5">
-                                                <div class="opacity-25 mb-3">
-                                                    <i class="fas fa-search-dollar fa-3x"></i>
-                                                </div>
-                                                <p class="text-muted fw-500">Awaiting NYP Transaction Selection</p>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                        <!-- Cart Items -->
+                        <div id="returnCartItems" class="flex-grow-1 p-3" style="min-height: 400px; background: #fff; overflow-y: auto;">
+                            <div id="emptyCartMsg" class="text-center py-5 text-muted">
+                                <div class="mb-3 opacity-25">
+                                    <i class="fas fa-shopping-basket fa-3x"></i>
+                                </div>
+                                <p>Select items from the catalog on the left.</p>
                             </div>
+                            <div id="cartList" class="d-flex flex-column gap-3"></div>
                         </div>
 
-                        <div class="text-center py-5 bg-light border-top">
-                            <button type="submit" id="saveReturnBtn" class="btn-modern-save" disabled>
-                                Finalize Return & Update Ledgers
+                        <!-- Totals & Save -->
+                        <div class="p-4 bg-light border-top mt-auto">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted small ls-1 fw-bold">SELECTED CUSTOMER BALANCE</span>
+                                <span id="displayBalance" class="fw-bold text-danger">₦0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-4">
+                                <span class="h5 mb-0 fw-bold">Return Value:</span>
+                                <span id="totalReturnAmount" class="h5 mb-0 fw-bold text-primary">₦0.00</span>
+                            </div>
+                            
+                            <button id="saveReturnBtn" class="btn-modern-save w-100 py-3" disabled>
+                                <i class="fas fa-check-double me-2"></i> Finalize Reconciliation
                             </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Return Details Modal -->
+    <div class="modal fade" id="returnQtyModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                <div class="modal-header bg-dark text-white border-0 py-3" style="border-radius: 20px 20px 0 0;">
+                    <h6 class="modal-title fw-bold" id="modalItemName">Process Return</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="modalItemId">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Return Unit</label>
+                        <select id="modalUnitType" class="form-select form-control-modern w-100">
+                            <option value="unit">Unit</option>
+                            <option value="carton">Carton</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-4">
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Qty to Return</label>
+                            <input type="number" id="modalQty" class="form-control-modern w-100" value="1" min="1">
+                            <div class="mt-2 d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Returnable:</small>
+                                <small class="text-primary fw-extrabold" id="modalMaxQty">0</small>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="confirmAddBtn" class="btn btn-dark w-100 py-3 fw-bold rounded-pill shadow">
+                        Add to Return Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Success Toast Container -->
     <div class="status-overlay" id="toastContainer"></div>
@@ -360,6 +394,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Firebase Module -->
     <script type="module" src="nyp-stock-return.js"></script>
+    <!-- Luxury AI Bot JS -->
+    <script src="../api-client.js"></script>
+    <script src="luxury-bot.js"></script>
 </body>
 
 </html>
